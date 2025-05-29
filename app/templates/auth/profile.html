@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="profile-container">
+    <h2>Профиль пользователя</h2>
+    
+    <div class="profile-info">
+        <div class="info-group">
+            <label>Имя пользователя:</label>
+            <span>{{ user.username }}</span>
+        </div>
+        
+        <div class="info-group">
+            <label>Email:</label>
+            <span>{{ user.email }}</span>
+        </div>
+        
+        <div class="info-group">
+            <label>Дата регистрации:</label>
+            <span>{{ user.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+        </div>
+        
+        {% if user.last_login %}
+        <div class="info-group">
+            <label>Последний вход:</label>
+            <span>{{ user.last_login.strftime('%d.%m.%Y %H:%M') }}</span>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="profile-actions">
+        <button id="logoutBtn" class="btn btn-danger">Выйти</button>
+    </div>
+</div>
+
+<script>
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try {
+        const response = await fetch('/logout');
+        const data = await response.json();
+        
+        if (response.ok) {
+            window.location.href = '/login';
+        } else {
+            alert(data.error || 'Произошла ошибка при выходе');
+        }
+    } catch (error) {
+        alert('Произошла ошибка при выходе');
+    }
+});
+</script>
+{% endblock %} 

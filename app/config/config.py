@@ -14,6 +14,21 @@ class BaseConfig:
     ALLOWED_EXTENSIONS = {'wav', 'mp3', 'ogg', 'm4a'}
     FFMPEG_PATH = r"C:\ffmpeg\bin"
 
+    # MySQL конфигурация
+    MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
+    MYSQL_PORT = int(os.getenv('MYSQL_PORT', 3306))
+    MYSQL_USER = os.getenv('MYSQL_USER', 'root')
+    MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', '')
+    MYSQL_DB = os.getenv('MYSQL_DB', 'korgan_db')
+    
+    SQLALCHEMY_DATABASE_URI = f"mysql+mysqlconnector://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DB}"
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # Redis конфигурация
+    REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+    REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+    REDIS_DB = int(os.getenv('REDIS_DB', 0))
+    
     @classmethod
     def validate_config(cls) -> Dict[str, str]:
         """Проверяет наличие всех необходимых переменных окружения"""
@@ -24,6 +39,9 @@ class BaseConfig:
             
         if not os.path.exists(cls.FFMPEG_PATH):
             missing_vars.append("FFMPEG_PATH (не найден)")
+            
+        if not cls.MYSQL_PASSWORD:
+            missing_vars.append("MYSQL_PASSWORD")
             
         return missing_vars
 
@@ -43,6 +61,7 @@ class TestingConfig(BaseConfig):
     DEBUG = True
     TESTING = True
     MAX_CONTENT_LENGTH = 1 * 1024 * 1024  # 1MB для тестов
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"  # Используем SQLite в памяти для тестов
 
 # Выбор конфигурации в зависимости от окружения
 config = {
