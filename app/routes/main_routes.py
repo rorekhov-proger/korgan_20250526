@@ -8,6 +8,9 @@ main = Blueprint('main', __name__)
 speech_service = SpeechService()
 gpt_service = GPTService()
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in Config.ALLOWED_EXTENSIONS
+
 @main.route("/")
 def index():
     return render_template('index.html')
@@ -15,14 +18,26 @@ def index():
 @main.route("/upload", methods=["POST"])
 def upload():
     if "audio_file" not in request.files:
-        return jsonify({"error": "File not found"}), 400
+        return jsonify({"error": "Файл не найден"}), 400
 
     audio = request.files["audio_file"]
+    
+    if not audio.filename:
+        return jsonify({"error": "Пустое имя файла"}), 400
+        
+    if not allowed_file(audio.filename):
+        return jsonify({"error": f"Недопустимый формат файла. Разрешены: {', '.join(Config.ALLOWED_EXTENSIONS)}"}), 400
+    
+    if request.content_length > Config.MAX_CONTENT_LENGTH:
+        return jsonify({"error": f"Файл слишком большой. Максимальный размер: {Config.MAX_CONTENT_LENGTH // (1024*1024)}MB"}), 413
+
     filepath = os.path.join(Config.UPLOAD_FOLDER, audio.filename)
     
     try:
         audio.save(filepath)
         text = speech_service.transcribe_audio(filepath)
+        if not text:
+            return jsonify({"error": "Не удалось распознать речь в аудио"}), 400
         return jsonify({"text": text})
 
     except Exception as e:
@@ -30,17 +45,22 @@ def upload():
 
     finally:
         if os.path.exists(filepath):
-            os.remove(filepath)
+            try:
+                os.remove(filepath)
+            except:
+                pass
 
 @main.route("/gpt", methods=["POST"])
 def gpt():
-    data = request.get_json()
-    user_message = data.get("message", "")
-    
-    if not user_message:
-        return jsonify({"error": "Empty message"}), 400
-
     try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Отсутствуют данные запроса"}), 400
+            
+        user_message = data.get("message", "").strip()
+        if not user_message:
+            return jsonify({"error": "Пустое сообщение"}), 400
+
         reply = gpt_service.get_completion(user_message)
         return jsonify({"reply": reply})
 

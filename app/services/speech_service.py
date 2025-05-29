@@ -1,22 +1,54 @@
 import whisper
 import os
+import gc
+import torch
 
 class SpeechService:
+    _instance = None
+    _model = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(SpeechService, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self):
-        self.model = whisper.load_model("medium")
+        if SpeechService._model is None:
+            SpeechService._model = whisper.load_model("medium")
+
+    @property
+    def model(self):
+        return SpeechService._model
 
     def transcribe_audio(self, filepath):
         try:
-            if os.path.getsize(filepath) < 1000:
-                raise ValueError("File is too small or empty")
+            if not os.path.exists(filepath):
+                raise ValueError("Файл не существует")
+
+            file_size = os.path.getsize(filepath)
+            if file_size < 1000:
+                raise ValueError("Файл слишком маленький или пустой")
+            
+            if file_size > 25 * 1024 * 1024:  # 25MB
+                raise ValueError("Файл слишком большой для обработки")
+
+            # Очищаем память CUDA перед обработкой
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
             result = self.model.transcribe(filepath, language="ru")
             text = result.get("text", "").strip()
 
             if not text:
-                raise ValueError("Could not recognize speech. Audio might be too quiet or of poor quality.")
+                raise ValueError("Не удалось распознать речь. Возможно, аудио слишком тихое или плохого качества.")
 
             return text
 
         except Exception as e:
-            raise Exception(f"Error processing audio: {str(e)}") 
+            raise Exception(f"Ошибка обработки аудио: {str(e)}")
+
+        finally:
+            # Очищаем память после обработки
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache() 
