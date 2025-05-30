@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify, send_from_directory, render_template
+from flask import Blueprint, request, jsonify, send_from_directory, render_template, redirect, url_for
+from flask_login import login_required, current_user
 import os
 from app.services.speech_service import SpeechService
 from app.services.gpt_service import GPTService
@@ -12,10 +13,18 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in Config.ALLOWED_EXTENSIONS
 
 @main.route("/")
-def index():
+def root():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.chat'))
+    return redirect(url_for('auth.login'))
+
+@main.route("/chat")
+@login_required
+def chat():
     return render_template('index.html')
 
 @main.route("/upload", methods=["POST"])
+@login_required
 def upload():
     if "audio_file" not in request.files:
         return jsonify({"error": "Файл не найден"}), 400
@@ -51,6 +60,7 @@ def upload():
                 pass
 
 @main.route("/gpt", methods=["POST"])
+@login_required
 def gpt():
     try:
         data = request.get_json()

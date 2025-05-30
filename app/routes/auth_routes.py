@@ -1,78 +1,79 @@
-from flask import Blueprint, request, jsonify, render_template
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
 from app.services.auth_service import AuthService
 from app.services.redis_service import RedisService
+from app.forms.auth_forms import LoginForm, RegistrationForm
+from app.models.user import User
+from app import db, login_manager
 import uuid
+import redis
+from app.config.config import Config
+from urllib.parse import urlparse
 
 auth = Blueprint('auth', __name__)
 auth_service = AuthService()
 redis_service = RedisService()
 
+# Инициализация Redis
+redis_client = redis.Redis(
+    host=Config.REDIS_HOST,
+    port=Config.REDIS_PORT,
+    db=Config.REDIS_DB,
+    decode_responses=True
+)
+
 @auth.route('/register', methods=['GET', 'POST'])
 def register():
-    if request.method == 'GET':
-        return render_template('auth/register.html')
-        
-    data = request.get_json()
-    email = data.get('email')
-    username = data.get('username')
-    password = data.get('password')
+    if current_user.is_authenticated:
+        return redirect(url_for('main.chat'))
     
-    if not all([email, username, password]):
-        return jsonify({"error": "Все поля обязательны для заполнения"}), 400
-        
-    success, message = auth_service.register_user(email, username, password)
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        try:
+            user = User(
+                username=form.username.data,
+                email=form.email.data,
+                is_active=True
+            )
+            user.set_password(form.password.data)
+            
+            db.session.add(user)
+            db.session.commit()
+            
+            flash('Поздравляем, вы успешно зарегистрировались!', 'success')
+            return redirect(url_for('auth.login'))
+        except Exception as e:
+            db.session.rollback()
+            print(f"Ошибка при регистрации: {str(e)}")
+            flash('Произошла ошибка при регистрации. Попробуйте позже.', 'error')
+            return redirect(url_for('auth.register'))
     
-    if success:
-        return jsonify({"message": message}), 201
-    return jsonify({"error": message}), 400
+    return render_template('auth/register.html', form=form)
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'GET':
-        return render_template('auth/login.html')
-        
-    data = request.get_json()
-    login = data.get('login')  # email или username
-    password = data.get('password')
+    if current_user.is_authenticated:
+        return redirect(url_for('main.chat'))
     
-    if not all([login, password]):
-        return jsonify({"error": "Все поля обязательны для заполнения"}), 400
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        if user is None or not user.check_password(form.password.data):
+            flash('Неверное имя пользователя или пароль', 'error')
+            return redirect(url_for('auth.login'))
         
-    success, message, user = auth_service.authenticate_user(
-        login, 
-        password,
-        request.remote_addr
-    )
+        login_user(user, remember=form.remember_me.data)
+        next_page = request.args.get('next')
+        if not next_page or urlparse(next_page).netloc != '':
+            next_page = url_for('main.chat')
+        return redirect(next_page)
     
-    if success and user:
-        login_user(user)
-        
-        # Создаем новую сессию
-        session_id = str(uuid.uuid4())
-        redis_service.set_user_session(str(user.id), session_id)
-        
-        return jsonify({
-            "message": message,
-            "user": {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email
-            }
-        })
-        
-    return jsonify({"error": message}), 401
+    return render_template('auth/login.html', title='Вход', form=form)
 
 @auth.route('/logout')
-@login_required
 def logout():
-    user_id = str(current_user.id)
-    success, message = auth_service.logout_user(user_id)
     logout_user()
-    
-    if success:
-        return jsonify({"message": message})
-    return jsonify({"error": message}), 500
+    return redirect(url_for('auth.login'))
 
 @auth.route('/profile')
 @login_required
