@@ -8,12 +8,12 @@
 <body>
     <div class="container">
         <aside class="sidebar">
-            <p>Привет goga!</p>
+            <p>Привет {{ current_user.username }}!</p>
             <p><strong>Текущий чат:</strong><br><span class="highlight">Новый чат: 2025.05.22</span></p>
             <ul class="links">
                 <li><a href="#">Протокол</a></li>
                 <li><a href="#">Протокол_тест</a></li>
-                <li><a href="#">Выйти</a></li>
+                <li><a href="{{ url_for('auth.logout') }}" class="logout-link">Выйти</a></li>
             </ul>
             <div class="chat-list">
                 <p>Чаты:</p>
