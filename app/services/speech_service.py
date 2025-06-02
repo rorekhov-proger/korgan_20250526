@@ -29,10 +29,9 @@ class SpeechService:
             if file_size < 1000:
                 raise ValueError("Файл слишком маленький или пустой")
             
-            if file_size > 25 * 1024 * 1024:  # 25MB
+            if file_size > 25 * 1024 * 1024:
                 raise ValueError("Файл слишком большой для обработки")
 
-            # Очищаем память CUDA перед обработкой
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
@@ -48,7 +47,6 @@ class SpeechService:
             raise Exception(f"Ошибка обработки аудио: {str(e)}")
 
         finally:
-            # Очищаем память после обработки
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache() 

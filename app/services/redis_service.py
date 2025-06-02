@@ -24,27 +24,22 @@ class RedisService:
         return RedisService._redis
         
     def set_user_session(self, user_id: str, session_id: str, expire: int = 3600):
-        """Сохраняет сессию пользователя"""
         key = f"user_session:{user_id}"
         self.client.set(key, session_id, ex=expire)
         
     def get_user_session(self, user_id: str) -> str:
-        """Получает ID сессии пользователя"""
         key = f"user_session:{user_id}"
         return self.client.get(key)
         
     def delete_user_session(self, user_id: str):
-        """Удаляет сессию пользователя"""
         key = f"user_session:{user_id}"
         self.client.delete(key)
         
     def set_failed_attempts(self, ip: str, attempts: int = 1, expire: int = 300):
-        """Сохраняет количество неудачных попыток входа"""
         key = f"failed_login:{ip}"
         self.client.set(key, attempts, ex=expire)
         
     def get_failed_attempts(self, ip: str) -> int:
-        """Получает количество неудачных попыток входа"""
         key = f"failed_login:{ip}"
         attempts = self.client.get(key)
         return int(attempts) if attempts else 0 
