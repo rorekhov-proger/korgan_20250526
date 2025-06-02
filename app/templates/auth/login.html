@@ -16,24 +16,24 @@
             <form method="POST" action="{{ url_for('auth.login') }}" aria-label="Форма входа">
                 {{ form.hidden_tag() }}
                 <div class="auth-form-group">
-                    {{ form.email.label(class="auth-form-label") }}
-                    {{ form.email(class="auth-form-control", aria-required="true") }}
+                    {{ form.email.label(class_="auth-form-label") }}
+                    {{ form.email(class_="auth-form-control", **{"aria-required": "true"}) }}
                     {% for error in form.email.errors %}
                     <div class="auth-error" role="alert">{{ error }}</div>
                     {% endfor %}
                 </div>
                 <div class="auth-form-group">
-                    {{ form.password.label(class="auth-form-label") }}
-                    {{ form.password(class="auth-form-control", aria-required="true") }}
+                    {{ form.password.label(class_="auth-form-label") }}
+                    {{ form.password(class_="auth-form-control", **{"aria-required": "true"}) }}
                     {% for error in form.password.errors %}
                     <div class="auth-error" role="alert">{{ error }}</div>
                     {% endfor %}
                 </div>
                 <div class="auth-form-check">
-                    {{ form.remember_me(class="auth-form-check-input") }}
-                    {{ form.remember_me.label(class="auth-form-check-label") }}
+                    {{ form.remember_me(class_="auth-form-check-input") }}
+                    {{ form.remember_me.label(class_="auth-form-check-label") }}
                 </div>
-                {{ form.submit(class="auth-btn") }}
+                {{ form.submit(class_="auth-btn") }}
             </form>
         </div>
         <div class="auth-card-footer">
