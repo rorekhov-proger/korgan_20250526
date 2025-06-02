@@ -1,44 +1,42 @@
 {% extends "base.html" %}
 
 {% block head %}
-<meta name="description" content="Страница входа в систему">
-<meta name="keywords" content="вход, логин, авторизация">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
 {% endblock %}
 
 {% block content %}
-<main class="auth-container">
+<div class="auth-container">
     <div class="auth-card">
         <div class="auth-card-header">
-            <h1 class="auth-title">Вход в систему</h1>
+            <h3>Вход в систему</h3>
         </div>
         <div class="auth-card-body">
-            <form method="POST" action="{{ url_for('auth.login') }}" aria-label="Форма входа">
+            <form method="POST" action="{{ url_for('auth.login') }}">
                 {{ form.hidden_tag() }}
                 <div class="auth-form-group">
-                    {{ form.email.label(class_="auth-form-label") }}
-                    {{ form.email(class_="auth-form-control", **{"aria-required": "true"}) }}
+                    {{ form.email.label(class="auth-form-label") }}
+                    {{ form.email(class="auth-form-control") }}
                     {% for error in form.email.errors %}
-                    <div class="auth-error" role="alert">{{ error }}</div>
+                    <div class="auth-error">{{ error }}</div>
                     {% endfor %}
                 </div>
                 <div class="auth-form-group">
-                    {{ form.password.label(class_="auth-form-label") }}
-                    {{ form.password(class_="auth-form-control", **{"aria-required": "true"}) }}
+                    {{ form.password.label(class="auth-form-label") }}
+                    {{ form.password(class="auth-form-control") }}
                     {% for error in form.password.errors %}
-                    <div class="auth-error" role="alert">{{ error }}</div>
+                    <div class="auth-error">{{ error }}</div>
                     {% endfor %}
                 </div>
                 <div class="auth-form-check">
-                    {{ form.remember_me(class_="auth-form-check-input") }}
-                    {{ form.remember_me.label(class_="auth-form-check-label") }}
+                    {{ form.remember_me(class="auth-form-check-input") }}
+                    {{ form.remember_me.label(class="auth-form-check-label") }}
                 </div>
-                {{ form.submit(class_="auth-btn") }}
+                {{ form.submit(class="auth-btn") }}
             </form>
         </div>
         <div class="auth-card-footer">
-            <p>Нет аккаунта? <a href="{{ url_for('auth.register') }}" class="auth-link">Зарегистрируйтесь</a></p>
+            <p>Нет аккаунта? <a href="{{ url_for('auth.register') }}">Зарегистрируйтесь</a></p>
         </div>
     </div>
-</main>
+</div>
 {% endblock %} 

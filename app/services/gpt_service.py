@@ -33,6 +33,7 @@ class GPTService:
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json"
                 }
+                logging.info("[GPTService] Выполняется тестовый запрос /models...")
                 test_response = requests.get(
                     f"{base_url}/models",
                     headers=headers,
