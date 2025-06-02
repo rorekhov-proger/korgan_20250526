@@ -30,17 +30,27 @@ pip install -r requirements.txt
 
 4. Создайте файл .env в корневой директории проекта:
 ```
+# Основные настройки Flask
 SECRET_KEY=your-secret-key
+FLASK_ENV=development  # development или production
+FLASK_HOST=0.0.0.0    # По умолчанию 0.0.0.0
+FLASK_PORT=5000       # По умолчанию 5000
+
+# OpenAI
 OPENAI_API_KEY=your-openai-api-key
+OPENAI_API_BASE_URL=https://api.openai.com/v1
+
+# MySQL
 MYSQL_HOST=localhost
 MYSQL_PORT=3306
 MYSQL_USER=root
 MYSQL_PASSWORD=your-mysql-password
 MYSQL_DB=korgan_db
+
+# Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_DB=0
-FLASK_ENV=development
 ```
 
 5. Настройте базу данных:
@@ -67,7 +77,19 @@ flask db upgrade
 python run.py
 ```
 
-Приложение будет доступно по адресу: http://localhost:5000
+Приложение будет доступно по адресу, указанному в настройках (по умолчанию: http://localhost:5000)
+
+## Режимы работы
+
+### Разработка (development)
+- Включен режим отладки
+- Подробные сообщения об ошибках
+- Автоматическая перезагрузка при изменении кода
+
+### Продакшен (production)
+- Отключен режим отладки
+- Минимальные сообщения об ошибках
+- Оптимизированная производительность
 
 ## Функциональность
 - Аутентификация пользователей
