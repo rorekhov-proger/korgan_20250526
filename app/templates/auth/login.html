@@ -14,9 +14,9 @@
             <form method="POST" action="{{ url_for('auth.login') }}">
                 {{ form.hidden_tag() }}
                 <div class="auth-form-group">
-                    {{ form.username.label(class="auth-form-label") }}
-                    {{ form.username(class="auth-form-control") }}
-                    {% for error in form.username.errors %}
+                    {{ form.email.label(class="auth-form-label") }}
+                    {{ form.email(class="auth-form-control") }}
+                    {% for error in form.email.errors %}
                     <div class="auth-error">{{ error }}</div>
                     {% endfor %}
                 </div>

@@ -71,7 +71,8 @@ def gpt():
         if not user_message:
             return jsonify({"error": "Пустое сообщение"}), 400
 
-        reply = gpt_service.get_completion(user_message)
+        model = data.get("model", "gpt-3.5-turbo")  # Get model from request or use default
+        reply = gpt_service.get_completion(user_message, model=model)
         return jsonify({"reply": reply})
 
     except Exception as e:

@@ -49,6 +49,9 @@ def create_app(config_class=Config):
     from app.routes.auth_routes import auth
     app.register_blueprint(auth)
     
+    from app.routes.chat_routes import chat_bp
+    app.register_blueprint(chat_bp)
+    
     # Инициализация конфигурации
     from app import cli
     cli.init_app(app)

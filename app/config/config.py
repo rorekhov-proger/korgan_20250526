@@ -3,12 +3,20 @@ from dotenv import load_dotenv
 from typing import Dict, Any
 
 # Загружаем переменные окружения из .env файла
+print("Загрузка .env файла...")
 load_dotenv()
 
 class BaseConfig:
     """Базовая конфигурация"""
     SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key')
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+    OPENAI_API_BASE_URL = os.getenv('OPENAI_API_BASE_URL', 'https://api.openai.com/v1')
+    OPENAI_PROJECT_ID = os.getenv('OPENAI_PROJECT_ID', 'proj_q9HWIMPFxlHs4MBuauU0aYie')
+    
+    # Отладочный вывод
+    print(f"[Config] OPENAI_API_KEY: {OPENAI_API_KEY[:10]}... (скрыт)")
+    print(f"[Config] OPENAI_API_BASE_URL: {OPENAI_API_BASE_URL}")
+    print(f"[Config] OPENAI_PROJECT_ID: {OPENAI_PROJECT_ID}")
     UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
     ALLOWED_EXTENSIONS = {'wav', 'mp3', 'ogg', 'm4a'}
