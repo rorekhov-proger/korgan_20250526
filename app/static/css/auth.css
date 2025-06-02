@@ -138,6 +138,15 @@ html, body {
     transform: translateY(-2px);
 }
 
+.auth-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(79, 154, 255, 0.4);
+}
+
+.auth-btn:active {
+    transform: translateY(1px);
+}
+
 /* Футер карточки */
 .auth-card-footer {
     padding: 14px;
@@ -155,6 +164,13 @@ html, body {
 
 .auth-card-footer a:hover {
     color: #3778c2;
+    text-decoration: underline;
+}
+
+.auth-card-footer a:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(79, 154, 255, 0.4);
+    border-radius: 4px;
 }
 
 /* Ошибки */
@@ -162,6 +178,13 @@ html, body {
     color: #f87171;
     font-size: 0.85rem;
     margin-top: 4px;
+    animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
 }
 
 /* Алерты */
@@ -170,6 +193,12 @@ html, body {
     margin-bottom: 15px;
     border-radius: 6px;
     font-size: 0.9rem;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
 }
 
 .auth-alert-success {
@@ -182,4 +211,32 @@ html, body {
     background-color: #431b1b;
     color: #f87171;
     border: 1px solid #991b1b;
+}
+
+/* Медиа-запросы для адаптивности */
+@media (max-width: 480px) {
+    .auth-card {
+        margin: 10px;
+    }
+    
+    .auth-card-header h3 {
+        font-size: 1.3rem;
+    }
+    
+    .auth-form-control {
+        font-size: 16px; /* Предотвращает масштабирование на iOS */
+    }
+}
+
+/* Улучшения для доступности */
+@media (prefers-reduced-motion: reduce) {
+    .auth-card,
+    .auth-error,
+    .auth-alert {
+        animation: none;
+    }
+    
+    .auth-btn:hover {
+        transform: none;
+    }
 }
