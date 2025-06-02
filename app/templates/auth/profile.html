@@ -1,10 +1,16 @@
 {% extends "base.html" %}
 
+{% block head %}
+<meta name="description" content="Профиль пользователя">
+<meta name="keywords" content="профиль, личный кабинет, настройки">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
 {% block content %}
-<div class="profile-container">
-    <h2>Профиль пользователя</h2>
+<main class="profile-container">
+    <h1 class="profile-title">Профиль пользователя</h1>
     
-    <div class="profile-info">
+    <section class="profile-info" aria-label="Информация пользователя">
         <div class="info-group">
             <label>Имя пользователя:</label>
             <span>{{ user.username }}</span>
@@ -26,12 +32,12 @@
             <span>{{ user.last_login.strftime('%d.%m.%Y %H:%M') }}</span>
         </div>
         {% endif %}
-    </div>
+    </section>
     
-    <div class="profile-actions">
-        <button id="logoutBtn" class="btn btn-danger">Выйти</button>
-    </div>
-</div>
+    <section class="profile-actions">
+        <button id="logoutBtn" class="btn btn-danger" aria-label="Выйти из системы">Выйти</button>
+    </section>
+</main>
 
 <script>
 document.getElementById('logoutBtn').addEventListener('click', async () => {
@@ -45,6 +51,7 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
             alert(data.error || 'Произошла ошибка при выходе');
         }
     } catch (error) {
+        console.error('Ошибка при выходе:', error);
         alert('Произошла ошибка при выходе');
     }
 });

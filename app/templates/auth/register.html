@@ -1,45 +1,47 @@
 {% extends "base.html" %}
 
 {% block head %}
+<meta name="description" content="Страница регистрации нового пользователя">
+<meta name="keywords" content="регистрация, создание аккаунта, новый пользователь">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="auth-container">
+<main class="auth-container">
     <div class="auth-card">
         <div class="auth-card-header">
-            <h3>Регистрация</h3>
+            <h1 class="auth-title">Регистрация</h1>
         </div>
         <div class="auth-card-body">
-            <form method="POST" action="{{ url_for('auth.register') }}">
+            <form method="POST" action="{{ url_for('auth.register') }}" aria-label="Форма регистрации">
                 {{ form.hidden_tag() }}
                 <div class="auth-form-group">
                     {{ form.email.label(class="auth-form-label") }}
-                    {{ form.email(class="auth-form-control") }}
+                    {{ form.email(class="auth-form-control", aria-required="true") }}
                     {% for error in form.email.errors %}
-                    <div class="auth-error">{{ error }}</div>
+                    <div class="auth-error" role="alert">{{ error }}</div>
                     {% endfor %}
                 </div>
                 <div class="auth-form-group">
                     {{ form.password.label(class="auth-form-label") }}
-                    {{ form.password(class="auth-form-control") }}
+                    {{ form.password(class="auth-form-control", aria-required="true") }}
                     {% for error in form.password.errors %}
-                    <div class="auth-error">{{ error }}</div>
+                    <div class="auth-error" role="alert">{{ error }}</div>
                     {% endfor %}
                 </div>
                 <div class="auth-form-group">
                     {{ form.password2.label(class="auth-form-label") }}
-                    {{ form.password2(class="auth-form-control") }}
+                    {{ form.password2(class="auth-form-control", aria-required="true") }}
                     {% for error in form.password2.errors %}
-                    <div class="auth-error">{{ error }}</div>
+                    <div class="auth-error" role="alert">{{ error }}</div>
                     {% endfor %}
                 </div>
                 {{ form.submit(class="auth-btn") }}
             </form>
         </div>
         <div class="auth-card-footer">
-            <p>Уже есть аккаунт? <a href="{{ url_for('auth.login') }}">Войдите</a></p>
+            <p>Уже есть аккаунт? <a href="{{ url_for('auth.login') }}" class="auth-link">Войдите</a></p>
         </div>
     </div>
-</div>
+</main>
 {% endblock %} 
