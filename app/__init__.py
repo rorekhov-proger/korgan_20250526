@@ -1,10 +1,12 @@
-from flask import Flask
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_session import Session
 from app.config.config import Config
 import os
+import logging
+from redis import Redis
 
 # Инициализация расширений
 db = SQLAlchemy()
@@ -60,6 +62,33 @@ def create_app(config_class=Config):
     with app.app_context():
         db.create_all()
     
+    # Настройка логирования
+    logging.basicConfig(
+        filename='app.log',
+        level=logging.DEBUG,
+        format='%(asctime)s %(levelname)s %(message)s'
+    )
+
+    # Проверка подключения к Redis
+    try:
+        redis_client = Redis(host='localhost', port=6379, decode_responses=True)
+        redis_client.ping()
+        logging.info("Redis подключен успешно.")
+    except Exception as e:
+        logging.error(f"Ошибка подключения к Redis: {e}")
+        raise RuntimeError("Redis недоступен. Проверьте настройки и запустите сервер Redis.")
+
+    # Глобальная обработка ошибок
+    @app.errorhandler(500)
+    def internal_server_error(e):
+        logging.error(f"Internal Server Error: {e}")
+        return render_template('500.html'), 500
+
+    @app.errorhandler(404)
+    def not_found_error(e):
+        logging.warning(f"Page Not Found: {e}")
+        return render_template('404.html'), 404
+    
     return app
 
 # Загрузчик пользователя для Flask-Login
@@ -69,4 +98,4 @@ def load_user(user_id):
     try:
         return User.query.get(int(user_id))
     except:
-        return None 
+        return None

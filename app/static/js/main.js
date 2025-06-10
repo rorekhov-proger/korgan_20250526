@@ -29,7 +29,6 @@ document.addEventListener("DOMContentLoaded", function () {
     `;
     document.head.appendChild(style);
 
-    // Загрузка аудио-файла
     if (uploadBtn) {
         uploadBtn.addEventListener("click", () => {
             const input = document.createElement("input");
@@ -64,7 +63,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // Отправка текста в GPT
     async function sendMessage() {
         const text = userInput.value.trim();
         if (!text) return;
@@ -96,7 +94,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // Функция для создания нового чата
     async function createNewChat() {
         const title = `Новый чат: ${new Date().toLocaleString('ru')}`;
         try {
@@ -113,17 +110,16 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             const chat = await response.json();
-            // Обновляем список чатов
+
             await loadChats();
-            // Переключаемся на новый чат
+
             switchToChat(chat.id);
         } catch (error) {
             console.error('Ошибка:', error);
             alert('Не удалось создать новый чат');
         }
     }
-
-    // Функция для загрузки списка чатов
+в
     async function loadChats() {
         try {
             const response = await fetch('/api/chats');
@@ -131,58 +127,56 @@ document.addEventListener("DOMContentLoaded", function () {
                 throw new Error('Ошибка при загрузке чатов');
             }
             const chats = await response.json();
-            
-            // Очищаем список чатов
+
             const chatList = document.querySelector('.chat-list');
-            // Оставляем только параграф "Чаты:"
+
             const chatTitle = chatList.querySelector('p');
             chatList.innerHTML = '';
             chatList.appendChild(chatTitle);
-            
-            // Добавляем чаты в список
+
             chats.forEach(chat => {
-                const button = document.createElement('button');
-                button.textContent = chat.title;
-                button.dataset.chatId = chat.id;
-                button.onclick = () => switchToChat(chat.id);
-                
-                // Добавляем обработчик правого клика
-                button.addEventListener('contextmenu', (e) => {
-                    e.preventDefault(); // Отменяем стандартное контекстное меню
-                    showContextMenu(e, chat);
-                });
-                
-                chatList.appendChild(button);
+                const chatItem = document.createElement('div');
+                chatItem.className = 'chat-item';
+                chatItem.dataset.chatId = chat.id;
+                chatItem.innerText = chat.title;
+                chatItem.addEventListener('click', () => switchToChat(chat.id));
+                chatList.appendChild(chatItem);
             });
         } catch (error) {
             console.error('Ошибка:', error);
+            alert('Не удалось загрузить список чатов');
         }
     }
 
-    // Функция для переключения на чат
     async function switchToChat(chatId) {
         try {
             const response = await fetch(`/api/chats/${chatId}/messages`);
             if (!response.ok) {
-                throw new Error('Ошибка при загрузке сообщений');
+                throw new Error('Ошибка при загрузке сообщений чата');
             }
             const messages = await response.json();
-            
-            // Очищаем окно чата
+
             chatWindow.innerHTML = '';
-            
-            // Добавляем сообщения в окно чата
-            messages.forEach(message => {
-                const messageDiv = document.createElement('div');
-                messageDiv.className = `message ${message.role}`;
-                messageDiv.textContent = message.content;
-                chatWindow.appendChild(messageDiv);
+
+            messages.forEach(msg => {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `message ${msg.sender === 'user' ? 'user' : 'assistant'}`;
+                msgDiv.innerText = msg.content;
+                chatWindow.appendChild(msgDiv);
             });
-            
-            // Прокручиваем к последнему сообщению
+
             chatWindow.scrollTop = chatWindow.scrollHeight;
+
+            // Обновляем выделение активного чата
+            const chatItems = document.querySelectorAll('.chat-item');
+            chatItems.forEach(item => item.classList.remove('active'));
+            const activeChat = document.querySelector(`.chat-item[data-chat-id='${chatId}']`);
+            if (activeChat) {
+                activeChat.classList.add('active');
+            }
         } catch (error) {
             console.error('Ошибка:', error);
+            alert('Не удалось загрузить сообщения чата');
         }
     }
 

@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from typing import Dict, Any
+import redis
 
 # Загружаем переменные окружения из .env файла
 print("Загрузка .env файла...")
@@ -37,6 +38,10 @@ class BaseConfig:
     REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
     REDIS_DB = int(os.getenv('REDIS_DB', 0))
     
+    # Изменяем тип сессии на Redis
+    SESSION_TYPE = 'redis'
+    SESSION_REDIS = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
+
     @classmethod
     def validate_config(cls) -> Dict[str, str]:
         """Проверяет наличие всех необходимых переменных окружения"""
@@ -98,4 +103,8 @@ def init_app(app):
     
     # Добавляем путь к ffmpeg в PATH
     if os.path.exists(Config.FFMPEG_PATH):
-        os.environ["PATH"] += os.pathsep + Config.FFMPEG_PATH 
+        os.environ["PATH"] += os.pathsep + Config.FFMPEG_PATH
+
+print(f"[DEBUG] REDIS_HOST: {os.getenv('REDIS_HOST')}")
+print(f"[DEBUG] MYSQL_HOST: {os.getenv('MYSQL_HOST')}")
+print(f"[DEBUG] OPENAI_API_KEY: {os.getenv('OPENAI_API_KEY')[:10]}... (скрыт)")

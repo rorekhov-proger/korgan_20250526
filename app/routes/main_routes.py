@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, send_from_directory, render_template, redirect, url_for
 from flask_login import login_required, current_user
 import os
+import logging
 from app.services.speech_service import SpeechService
 from app.services.gpt_service import GPTService
 from app.config.config import Config
@@ -65,15 +66,23 @@ def gpt():
     try:
         data = request.get_json()
         if not data:
+            logging.error("[GPT Route] Отсутствуют данные запроса")
             return jsonify({"error": "Отсутствуют данные запроса"}), 400
-            
+
         user_message = data.get("message", "").strip()
         if not user_message:
+            logging.error("[GPT Route] Пустое сообщение")
             return jsonify({"error": "Пустое сообщение"}), 400
 
-        model = data.get("model", "gpt-3.5-turbo")  # Get model from request or use default
+        model = data.get("model", "gpt-3.5-turbo")
+        logging.info(f"[GPT Route] Получено сообщение: {user_message}, модель: {model}")
+        logging.info(f"[GPT Route] Используется OPENAI_API_KEY: {Config.OPENAI_API_KEY[:10]}... (скрыт)")
+        logging.info(f"[GPT Route] Используется OPENAI_API_BASE_URL: {Config.OPENAI_API_BASE_URL}")
+
         reply = gpt_service.get_completion(user_message, model=model)
+        logging.info(f"[GPT Route] Ответ от GPT: {reply}")
         return jsonify({"reply": reply})
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500 
+        logging.error(f"[GPT Route] Ошибка: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500

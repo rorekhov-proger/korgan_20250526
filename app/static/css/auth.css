@@ -1,4 +1,3 @@
-/* Основные стили страницы */
 html, body {
     height: 100%;
     margin: 0;
@@ -9,7 +8,6 @@ html, body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Navbar стили */
 .navbar {
     background: rgba(0, 0, 0, 0.6) !important;
     backdrop-filter: blur(8px);
@@ -25,7 +23,6 @@ html, body {
     color: #4f9aff !important;
 }
 
-/* Центрирование контейнера аутентификации */
 .auth-container {
     min-height: calc(100vh - 70px);
     display: flex;
@@ -33,10 +30,9 @@ html, body {
     align-items: center;
     padding: 20px;
     box-sizing: border-box;
-    margin-top: 70px; /* Высота navbar */
+    margin-top: 70px;
 }
 
-/* Карточка */
 .auth-card {
     background: #1e1e1e;
     border-radius: 12px;
@@ -48,7 +44,6 @@ html, body {
     animation: fadeIn 0.5s ease;
 }
 
-/* Анимация */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
