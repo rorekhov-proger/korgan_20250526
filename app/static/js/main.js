@@ -38,23 +38,46 @@ document.addEventListener("DOMContentLoaded", function () {
                 const file = input.files[0];
                 if (!file) return;
 
+                // Получаем chat_id из активного чата
+                const activeChat = document.querySelector('.chat-item.active');
+                const chatId = activeChat ? activeChat.dataset.chatId : null;
+                if (!chatId) {
+                    alert('Не выбран чат!');
+                    return;
+                }
+
+                // Добавляем сообщение пользователя о файле сразу
                 const userMsg = document.createElement("div");
                 userMsg.className = "message user";
                 userMsg.innerText = `📤 Отправлен файл: ${file.name}`;
                 chatWindow.appendChild(userMsg);
 
+                // Добавляем индикатор загрузки сразу
+                const loadingMsg = document.createElement("div");
+                loadingMsg.className = "message assistant loading-msg";
+                loadingMsg.innerText = "Распознаём аудио...";
+                chatWindow.appendChild(loadingMsg);
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+
                 const formData = new FormData();
                 formData.append("audio_file", file);
+                formData.append("chat_id", chatId);
+                formData.append("model", modelSelect.value);
 
                 try {
                     const res = await fetch("/upload", { method: "POST", body: formData });
                     const data = await res.json();
-                    const botMsg = document.createElement("div");
-                    botMsg.className = "message assistant";
-                    botMsg.innerText = data.text || "Ошибка распознавания";
-                    chatWindow.appendChild(botMsg);
-                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                    // После получения текста удаляем индикатор и показываем ответ
+                    loadingMsg.remove();
+                    if (data.text) {
+                        const botMsg = document.createElement("div");
+                        botMsg.className = "message assistant";
+                        botMsg.innerText = data.text;
+                        chatWindow.appendChild(botMsg);
+                        chatWindow.scrollTop = chatWindow.scrollHeight;
+                    }
                 } catch (err) {
+                    loadingMsg.remove();
                     alert("Произошла ошибка при загрузке файла.");
                 }
             };

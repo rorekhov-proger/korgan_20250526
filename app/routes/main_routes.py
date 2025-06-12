@@ -41,7 +41,11 @@ def upload():
         return jsonify({"error": "Файл не найден"}), 400
 
     audio = request.files["audio_file"]
-    
+    chat_id = request.form.get("chat_id")
+    model = request.form.get("model", "gpt-3.5-turbo")
+    if not chat_id:
+        return jsonify({"error": "Не выбран чат"}), 400
+
     if not audio.filename:
         return jsonify({"error": "Пустое имя файла"}), 400
         
@@ -52,17 +56,23 @@ def upload():
         return jsonify({"error": f"Файл слишком большой. Максимальный размер: {Config.MAX_CONTENT_LENGTH // (1024*1024)}MB"}), 413
 
     filepath = os.path.join(Config.UPLOAD_FOLDER, audio.filename)
-    
+    from app.models.chat import Chat
+    from app.services.chat_service import ChatService
     try:
         audio.save(filepath)
+        # Сохраняем сообщение пользователя как "📤 Отправлен файл: ..."
+        chat = Chat.query.get(chat_id)
+        if not chat:
+            return jsonify({"error": "Чат не найден"}), 404
+        file_message = f"📤 Отправлен файл: {audio.filename}"
+        ChatService.save_message(chat_id=chat_id, role="user", message_text=file_message, chat_title=chat.title)
+        # Распознаём текст
         text = speech_service.transcribe_audio(filepath)
-        if not text:
-            return jsonify({"error": "Не удалось распознать речь в аудио"}), 400
+        # Сохраняем распознанный текст как assistant
+        ChatService.save_message(chat_id=chat_id, role="assistant", message_text=text, chat_title=chat.title)
         return jsonify({"text": text})
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
     finally:
         if os.path.exists(filepath):
             try:
