@@ -318,6 +318,21 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    // Кнопка "Скачать историю"
+    const downloadBtn = Array.from(document.querySelectorAll('button')).find(btn => btn.textContent.trim() === 'Скачать историю');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', function() {
+            const activeChat = document.querySelector('.chat-item.active');
+            const chatId = activeChat ? activeChat.dataset.chatId : null;
+            if (!chatId) {
+                alert('Не выбран чат!');
+                return;
+            }
+            // Открываем ссылку на скачивание
+            window.open(`/chat/${chatId}/download`, '_blank');
+        });
+    }
+
     // Добавляем обработчики событий
     sendBtn.addEventListener("click", sendMessage);
     userInput.addEventListener("keydown", (e) => {

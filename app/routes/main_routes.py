@@ -101,8 +101,14 @@ def gpt():
         logging.info(f"[GPT Route] Используется OPENAI_API_KEY: {Config.OPENAI_API_KEY[:10]}... (скрыт)")
         logging.info(f"[GPT Route] Используется OPENAI_API_BASE_URL: {Config.OPENAI_API_BASE_URL}")
 
-        # Отправка сообщения в GPT
-        reply = gpt_service.get_completion(user_message, model=model)
+        # Получаем историю сообщений чата
+        from app.models.chat_message import ChatMessage
+        history = ChatMessage.query.filter_by(chat_id=chat_id).order_by(ChatMessage.created_at).all()
+        messages = [{"role": m.role, "content": m.message} for m in history]
+        messages.append({"role": "user", "content": user_message})  # текущее сообщение
+
+        # Отправка истории в GPT
+        reply = gpt_service.get_completion(messages, model=model)
         logging.info(f"[GPT Route] Ответ от GPT: {reply}")
 
         # Сохранение сообщения пользователя в базу данных
@@ -129,3 +135,40 @@ def gpt():
     except Exception as e:
         logging.error(f"[GPT Route] Ошибка: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
+
+@main.route("/chat/<int:chat_id>/download", methods=["GET"])
+@login_required
+def download_chat_history(chat_id):
+    from app.models.chat_message import ChatMessage
+    chat = None
+    try:
+        from app.models.chat import Chat
+        chat = Chat.query.get(chat_id)
+    except Exception:
+        pass
+    if not chat:
+        return "Чат не найден", 404
+    messages = ChatMessage.query.filter_by(chat_id=chat_id).order_by(ChatMessage.created_at).all()
+    lines = []
+    for msg in messages:
+        prefix = "user:" if msg.role == "user" else "assistant:"
+        lines.append(f"{prefix} {msg.message}")
+    content = "\n".join(lines)
+    from flask import Response
+    import re
+    import unicodedata
+    # Транслитерация и очистка названия чата для имени файла
+    def slugify(value):
+        value = str(value)
+        value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
+        value = re.sub(r'[^\w\-]+', '_', value)
+        value = re.sub(r'_+', '_', value)
+        return value.strip('_')
+    chat_title = chat.title or f"chat_{chat_id}"
+    safe_title = slugify(chat_title)[:40] or f"chat_{chat_id}"
+    filename = f"{safe_title}_history.txt"
+    return Response(
+        content,
+        mimetype="text/plain",
+        headers={"Content-Disposition": f"attachment;filename={filename}"}
+    )

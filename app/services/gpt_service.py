@@ -58,26 +58,23 @@ class GPTService:
     def client(self):
         return GPTService._client
 
-    def get_completion(self, user_message: str, model: str = "gpt-3.5-turbo", retry_count: int = 0) -> Optional[str]:
-        if not user_message:
-            raise ValueError("Пустое сообщение")
-
+    def get_completion(self, messages, model: str = "gpt-3.5-turbo", retry_count: int = 0) -> Optional[str]:
+        # messages — список словарей [{"role": ..., "content": ...}]
+        if not messages or not isinstance(messages, list):
+            raise ValueError("Пустой список сообщений для GPT")
         try:
-            logging.info(f"[GPTService] Отправка сообщения в API. Попытка {retry_count + 1}/{self.MAX_RETRIES + 1}")
+            logging.info(f"[GPTService] Отправка истории в API. Попытка {retry_count + 1}/{self.MAX_RETRIES + 1}")
             response = self.client.chat.completions.create(
                 model=model,
-                messages=[{"role": "user", "content": user_message}]
+                messages=messages
             )
             logging.info(f"[GPTService] Ответ от API: {response}")
             return response.choices[0].message.content.strip()
-
         except Exception as e:
             logging.error(f"[GPTService] Ошибка при запросе: {str(e)}")
-
             if retry_count < self.MAX_RETRIES:
                 wait = self.RETRY_DELAY * (retry_count + 1)
                 logging.info(f"[GPTService] Повтор запроса через {wait} секунд...")
                 time.sleep(wait)
-                return self.get_completion(user_message, model, retry_count + 1)
-
+                return self.get_completion(messages, model, retry_count + 1)
             raise Exception(f"[GPTService] Ошибка после {self.MAX_RETRIES} попыток: {str(e)}")
