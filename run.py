@@ -9,11 +9,10 @@ try:
     
     if __name__ == "__main__":
         logging.basicConfig(
-            level=logging.INFO,
+            level=logging.DEBUG,  # Установлено DEBUG для более подробных логов
             format="%(asctime)s [%(levelname)s] %(message)s",
             handlers=[
-                logging.FileHandler("app.log", encoding="utf-8"),
-                logging.StreamHandler()
+                logging.StreamHandler()  # Вывод логов в консоль
             ]
         )
         

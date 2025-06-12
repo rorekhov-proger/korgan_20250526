@@ -6,6 +6,7 @@ from flask_session import Session
 from app.config.config import Config
 import os
 import logging
+from logging.handlers import RotatingFileHandler
 from redis import Redis
 
 # Инициализация расширений
@@ -63,11 +64,19 @@ def create_app(config_class=Config):
         db.create_all()
     
     # Настройка логирования
-    logging.basicConfig(
-        filename='app.log',
-        level=logging.DEBUG,
-        format='%(asctime)s %(levelname)s %(message)s'
+    handler = RotatingFileHandler('app.log', maxBytes=10240, backupCount=10)
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
     )
+    handler.setFormatter(formatter)
+    app.logger.addHandler(handler)
+
+    app.logger.setLevel(logging.INFO)
+    app.logger.info('Приложение запущено')
+
+    # Тестовая запись в журнале
+    logging.debug("Тестовая запись в журнале.")
 
     # Проверка подключения к Redis
     try:

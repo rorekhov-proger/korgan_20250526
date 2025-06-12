@@ -9,6 +9,7 @@ import uuid
 import redis
 from app.config.config import Config
 from urllib.parse import urlparse
+import logging
 
 auth = Blueprint('auth', __name__)
 auth_service = AuthService()
@@ -51,19 +52,28 @@ def register():
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('main.chat'))
-
-    form = LoginForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
-        if user and user.check_password(form.password.data):
-            login_user(user, remember=form.remember_me.data)
-            flash('Вы успешно вошли в систему!', 'success')
+    try:
+        if current_user.is_authenticated:
             return redirect(url_for('main.chat'))
-        flash('Неверный email или пароль.', 'error')
 
-    return render_template('auth/login.html', form=form)
+        form = LoginForm()
+        if form.validate_on_submit():
+            user = User.query.filter_by(email=form.email.data).first()
+            if user:
+                logging.info(f"Пользователь найден: {user.email}")
+            else:
+                logging.warning(f"Пользователь с email {form.email.data} не найден.")
+
+            if user and user.check_password(form.password.data):
+                login_user(user, remember=form.remember_me.data)
+                flash('Вы успешно вошли в систему!', 'success')
+                return redirect(url_for('main.chat'))
+            flash('Неверный email или пароль.', 'error')
+
+        return render_template('auth/login.html', form=form)
+    except Exception as e:
+        logging.error(f"Ошибка в маршруте /login: {e}")
+        return render_template('500.html'), 500
 
 @auth.route('/logout')
 def logout():

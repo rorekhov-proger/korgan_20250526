@@ -1,5 +1,6 @@
 from datetime import datetime
 from app import db
+from app.models.message import Message
 
 class Chat(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -18,4 +19,4 @@ class Chat(db.Model):
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
             'messages_count': len(self.messages)
-        } 
+        }

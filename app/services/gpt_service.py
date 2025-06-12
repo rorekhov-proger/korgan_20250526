@@ -68,7 +68,7 @@ class GPTService:
                 model=model,
                 messages=[{"role": "user", "content": user_message}]
             )
-            logging.info("[GPTService] Получен ответ от API")
+            logging.info(f"[GPTService] Ответ от API: {response}")
             return response.choices[0].message.content.strip()
 
         except Exception as e:
@@ -80,4 +80,4 @@ class GPTService:
                 time.sleep(wait)
                 return self.get_completion(user_message, model, retry_count + 1)
 
-            raise Exception(f"[GPTService] Ошибка после {self.MAX_RETRIES} попыток: {str(e)}") 
+            raise Exception(f"[GPTService] Ошибка после {self.MAX_RETRIES} попыток: {str(e)}")

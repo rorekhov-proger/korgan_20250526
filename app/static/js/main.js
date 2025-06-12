@@ -5,8 +5,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const userInput = document.getElementById("user-input");
     const chatWindow = document.getElementById("chat-window");
     const modelSelect = document.createElement("select");
-    
-    // Add model options
+
     modelSelect.innerHTML = `
         <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
         <option value="gpt-4">GPT-4</option>
@@ -15,7 +14,6 @@ document.addEventListener("DOMContentLoaded", function () {
     modelSelect.className = "model-select";
     document.querySelector(".input-area").insertBefore(modelSelect, sendBtn);
 
-    // Add styles for model select
     const style = document.createElement("style");
     style.textContent = `
         .model-select {
@@ -74,22 +72,33 @@ document.addEventListener("DOMContentLoaded", function () {
         chatWindow.scrollTop = chatWindow.scrollHeight;
         userInput.value = "";
 
+        // Получаем chat_id из активного чата
+        const activeChat = document.querySelector('.chat-item.active');
+        const chatId = activeChat ? activeChat.dataset.chatId : null;
+        if (!chatId) {
+            alert('Не выбран чат!');
+            return;
+        }
+
         try {
             const res = await fetch("/gpt", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ 
                     message: text,
+                    chat_id: chatId, // <-- теперь chat_id передаётся
                     model: modelSelect.value 
                 })
             });
             const data = await res.json();
+            console.log("[DEBUG] Response from GPT API:", data);
             const botMsg = document.createElement("div");
             botMsg.className = "message assistant";
             botMsg.innerText = data.reply || "Ошибка получения ответа от GPT";
             chatWindow.appendChild(botMsg);
             chatWindow.scrollTop = chatWindow.scrollHeight;
         } catch (err) {
+            console.error("[ERROR] Произошла ошибка при отправке сообщения:", err);
             alert("Произошла ошибка при отправке сообщения.");
         }
     }
@@ -105,21 +114,39 @@ document.addEventListener("DOMContentLoaded", function () {
                 body: JSON.stringify({ title })
             });
 
-            if (!response.ok) {
+            // Добавляем диагностику для проверки ответа от API
+            console.log('Ответ от API:', response.status, response.statusText);
+            const responseBody = await response.text();
+            console.log('Тело ответа:', responseBody);
+
+            // Парсим JSON только если статус успешный
+            if (response.ok) {
+                const chatData = JSON.parse(responseBody);
+                console.log('Данные чата:', chatData);
+
+                // Динамически обновляем список чатов
+                await loadChats();
+
+                // Через небольшой таймаут выделяем новый чат как активный и открываем его
+                setTimeout(() => {
+                    const chatItems = document.querySelectorAll('.chat-item');
+                    chatItems.forEach(item => {
+                        if (item.dataset.chatId == chatData.id) {
+                            item.classList.add('active');
+                            switchToChat(chatData.id);
+                        } else {
+                            item.classList.remove('active');
+                        }
+                    });
+                }, 100);
+            } else {
                 throw new Error('Ошибка при создании чата');
             }
-
-            const chat = await response.json();
-
-            await loadChats();
-
-            switchToChat(chat.id);
         } catch (error) {
             console.error('Ошибка:', error);
             alert('Не удалось создать новый чат');
         }
     }
-в
     async function loadChats() {
         try {
             const response = await fetch('/api/chats');
@@ -140,6 +167,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 chatItem.dataset.chatId = chat.id;
                 chatItem.innerText = chat.title;
                 chatItem.addEventListener('click', () => switchToChat(chat.id));
+                chatItem.addEventListener('contextmenu', (event) => {
+                    event.preventDefault();
+                    showContextMenu(event, chat);
+                });
                 chatList.appendChild(chatItem);
             });
         } catch (error) {
@@ -150,7 +181,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     async function switchToChat(chatId) {
         try {
-            const response = await fetch(`/api/chats/${chatId}/messages`);
+            const response = await fetch(`/api/chat/${chatId}/messages`); // Исправлено на 'chat' вместо 'chats'
             if (!response.ok) {
                 throw new Error('Ошибка при загрузке сообщений чата');
             }
@@ -160,8 +191,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
             messages.forEach(msg => {
                 const msgDiv = document.createElement('div');
-                msgDiv.className = `message ${msg.sender === 'user' ? 'user' : 'assistant'}`;
-                msgDiv.innerText = msg.content;
+                msgDiv.className = `message ${msg.role === 'user' ? 'user' : 'assistant'}`;
+                msgDiv.innerText = msg.message; // Исправлено на msg.message
                 chatWindow.appendChild(msgDiv);
             });
 
@@ -244,7 +275,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!confirm('Вы уверены, что хотите удалить этот чат?')) return;
 
         try {
-            const response = await fetch(`/api/chats/${chatId}`, {
+            const response = await fetch(`/api/chat/${chatId}`, { // Исправлено на 'chat' вместо 'chats'
                 method: 'DELETE'
             });
 
@@ -283,3 +314,27 @@ document.addEventListener("DOMContentLoaded", function () {
     // Загружаем список чатов при загрузке страницы
     loadChats();
 });
+async function sendMessage(chatId, messageText) {
+    try {
+        const response = await fetch(`/api/chat/${chatId}/messages`, { // Исправлено на 'chat' вместо 'chats'
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                sender_id: 'user', // Замените на реальный идентификатор пользователя
+                message: messageText
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Ошибка при отправке сообщения');
+        }
+
+        const savedMessage = await response.json();
+        console.log('Сообщение успешно отправлено:', savedMessage);
+    } catch (error) {
+        console.error('Ошибка:', error);
+        alert('Не удалось отправить сообщение');
+    }
+}

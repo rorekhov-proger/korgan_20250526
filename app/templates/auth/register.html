@@ -2,6 +2,27 @@
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+<style>
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #181818;
+  }
+  .auth-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -42,4 +63,4 @@
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}
