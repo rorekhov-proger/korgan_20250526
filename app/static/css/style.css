@@ -212,12 +212,32 @@ body {
 }
 
 .logout-link {
-    color: #ff5722 !important;
-    transition: color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    background: linear-gradient(90deg, #ff512f 0%, #dd2476 100%);
+    color: #fff !important;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1.08em;
+    box-shadow: 0 2px 8px rgba(221,36,118,0.10);
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+    text-decoration: none;
+    margin-top: 18px;
+}
+
+.logout-link i {
+    font-size: 1.1em;
 }
 
 .logout-link:hover {
-    color: #ff7043 !important;
+    background: linear-gradient(90deg, #dd2476 0%, #ff512f 100%);
+    color: #fff !important;
+    box-shadow: 0 4px 16px rgba(221,36,118,0.18);
+    transform: translateY(-2px) scale(1.04);
     text-decoration: none;
 }
 
