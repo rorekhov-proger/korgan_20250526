@@ -2,89 +2,78 @@
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
-<style>
-  html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-  }
-  body {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #181818;
-  }
-  .auth-container {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .flash-message {
-    border-radius: 8px;
-    padding: 10px 18px;
-    margin-bottom: 18px;
-    text-align: center;
-    font-size: 1.08em;
-  }
-  .flash-message.error {
-    background: #ffeded;
-    color: #b30000;
-    border: 1px solid #ffb3b3;
-  }
-  .flash-message.success {
-    background: #eaffea;
-    color: #1a7f1a;
-    border: 1px solid #8be88b;
-  }
-</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 {% endblock %}
 
 {% block content %}
-<div class="auth-container">
-    <div class="auth-card">
-        <div class="auth-card-header">
-            <h3>Регистрация</h3>
-        </div>
-        <div class="auth-card-body">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-              {% if messages %}
-                {% for category, message in messages %}
-                  <div class="flash-message {{ category }}">{{ message }}</div>
-                {% endfor %}
-              {% endif %}
-            {% endwith %}
-            <form method="POST" action="{{ url_for('auth.register') }}">
-                {{ form.hidden_tag() }}
-                <div class="auth-form-group">
-                    {{ form.email.label(class="auth-form-label") }}
-                    {{ form.email(class="auth-form-control") }}
-                    {% for error in form.email.errors %}
-                    <div class="auth-error">{{ error }}</div>
-                    {% endfor %}
-                </div>
-                <div class="auth-form-group">
-                    {{ form.password.label(class="auth-form-label") }}
-                    {{ form.password(class="auth-form-control") }}
-                    {% for error in form.password.errors %}
-                    <div class="auth-error">{{ error }}</div>
-                    {% endfor %}
-                </div>
-                <div class="auth-form-group">
-                    {{ form.password2.label(class="auth-form-label") }}
-                    {{ form.password2(class="auth-form-control") }}
-                    {% for error in form.password2.errors %}
-                    <div class="auth-error">{{ error }}</div>
-                    {% endfor %}
-                </div>
-                {{ form.submit(class="auth-btn") }}
-            </form>
-        </div>
-        <div class="auth-card-footer">
-            <p>Уже есть аккаунт? <a href="{{ url_for('auth.login') }}">Войдите</a></p>
-        </div>
-    </div>
+<!-- Вынесено за пределы .container для корректного центрирования -->
+<div class="auth-outer">
+  <div class="auth-container">
+      <div class="auth-card">
+          <div class="auth-card-header">
+              <h3>Регистрация</h3>
+          </div>
+          <div class="auth-card-body">
+              {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                  {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
+                  {% endfor %}
+                {% endif %}
+              {% endwith %}
+              <form method="POST" action="{{ url_for('auth.register') }}" autocomplete="off">
+                  {{ form.hidden_tag() }}
+                  <div class="auth-form-group auth-icon-group">
+                      <span class="auth-icon"><i class="fa fa-envelope"></i></span>
+                      {{ form.email.label(class="auth-form-label") }}
+                      {{ form.email(class="auth-form-control auth-input-icon") }}
+                      {% for error in form.email.errors %}
+                      <div class="auth-error">{{ error }}</div>
+                      {% endfor %}
+                  </div>
+                  <div class="auth-form-group auth-icon-group auth-password-group">
+                      <span class="auth-icon"><i class="fa fa-lock"></i></span>
+                      {{ form.password.label(class="auth-form-label") }}
+                      <div class="auth-password-wrapper">
+                        {{ form.password(class="auth-form-control auth-input-icon password-input") }}
+                        <span class="toggle-password" onclick="togglePassword(this)"><i class="fa fa-eye"></i></span>
+                      </div>
+                      {% for error in form.password.errors %}
+                      <div class="auth-error">{{ error }}</div>
+                      {% endfor %}
+                  </div>
+                  <div class="auth-form-group auth-icon-group auth-password-group">
+                      <span class="auth-icon"><i class="fa fa-lock"></i></span>
+                      {{ form.password2.label(class="auth-form-label") }}
+                      <div class="auth-password-wrapper">
+                        {{ form.password2(class="auth-form-control auth-input-icon password-input") }}
+                        <span class="toggle-password" onclick="togglePassword(this)"><i class="fa fa-eye"></i></span>
+                      </div>
+                      {% for error in form.password2.errors %}
+                      <div class="auth-error">{{ error }}</div>
+                      {% endfor %}
+                  </div>
+                  {{ form.submit(class="auth-btn") }}
+              </form>
+          </div>
+          <div class="auth-card-footer">
+              <p>Уже есть аккаунт? <a href="{{ url_for('auth.login') }}">Войдите</a></p>
+          </div>
+      </div>
+  </div>
 </div>
+<script>
+function togglePassword(el) {
+  const input = el.parentElement.querySelector('input');
+  if (input.type === 'password') {
+    input.type = 'text';
+    el.querySelector('i').classList.remove('fa-eye');
+    el.querySelector('i').classList.add('fa-eye-slash');
+  } else {
+    input.type = 'password';
+    el.querySelector('i').classList.remove('fa-eye-slash');
+    el.querySelector('i').classList.add('fa-eye');
+  }
+}
+</script>
 {% endblock %}

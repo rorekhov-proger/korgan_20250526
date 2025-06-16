@@ -23,14 +23,24 @@ html, body {
     color: #4f9aff !important;
 }
 
-.auth-container {
-    min-height: calc(100vh - 70px);
+.auth-outer {
+    min-height: 100vh;
+    width: 100vw;
     display: flex;
-    justify-content: center;
     align-items: center;
-    padding: 20px;
+    justify-content: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+}
+
+.auth-container {
+    min-height: unset;
+    margin-top: 0;
+    padding: 0;
     box-sizing: border-box;
-    margin-top: 70px;
 }
 
 .auth-card {
@@ -177,4 +187,110 @@ html, body {
     background-color: #431b1b;
     color: #f87171;
     border: 1px solid #991b1b;
+}
+
+.auth-icon-group {
+    position: relative;
+}
+.auth-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888;
+    font-size: 1.1em;
+    pointer-events: none;
+    z-index: 2;
+}
+.auth-input-icon {
+    padding-left: 38px !important;
+}
+.auth-password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888;
+    cursor: pointer;
+    z-index: 3;
+    font-size: 1.1em;
+    transition: color 0.2s;
+}
+.toggle-password:hover {
+    color: #4f9aff;
+}
+
+.flash-message {
+    opacity: 0;
+    animation: fadeInFlash 0.7s forwards;
+}
+@keyframes fadeInFlash {
+    to { opacity: 1; }
+}
+
+/* Стили для бокового меню (navbar) */
+.custom-navbar {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #181818 60%, #232526 100%) !important;
+    border-right: 1px solid #232323;
+    box-shadow: 2px 0 16px 0 rgba(31,38,135,0.08);
+    padding: 0;
+    width: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    z-index: 10;
+}
+.navbar-inner {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 40px 0 40px 0;
+}
+.navbar-brand {
+    margin-bottom: 40px;
+    font-size: 1.3em;
+    font-weight: bold;
+    width: 100%;
+    text-align: left;
+    padding-left: 24px;
+    color: #fff !important;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.navbar-nav {
+    width: 100%;
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+.nav-item {
+    width: 100%;
+    margin-bottom: 10px;
+}
+.nav-link {
+    width: 100%;
+    text-align: left;
+    font-size: 1.1em;
+    padding: 12px 24px;
+    border-radius: 8px;
+    color: #fff;
+    background: none;
+    transition: background 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.nav-link.active, .nav-link:hover {
+    background: #232323;
+    color: #4f9aff;
 }
