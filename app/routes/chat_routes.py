@@ -2,6 +2,8 @@ from flask import Blueprint, jsonify, request
 from app import db
 from app.models.chat import Chat
 from app.models.chat_message import ChatMessage
+from app.services.protocol_service import generate_protocol_markdown, save_markdown
+from app.services.protocol_extract import extract_protocol_data
 
 chat_bp = Blueprint('chat', __name__)
 
@@ -133,3 +135,48 @@ def send_message(chat_id):
     except Exception as e:
         print("→ Ошибка при обработке сообщения:", str(e))
         return jsonify({'error': 'Ошибка сервера'}), 500
+
+@chat_bp.route('/api/protocol/generate', methods=['POST'])
+def generate_protocol():
+    """
+    Принимает JSON с распознанным текстом и параметром mode ('full' или 'fast'),
+    извлекает данные, формирует Markdown и возвращает ссылку на скачивание.
+    """
+    data = request.get_json() or {}
+    mode = data.get('mode', 'full')  # 'full' или 'fast'
+    protocol_data = data.get('protocol_data')
+    if not protocol_data:
+        return jsonify({'error': 'Нет данных для протокола'}), 400
+    # Генерация Markdown
+    md_content = generate_protocol_markdown(protocol_data, mode=mode)
+    md_link = save_markdown(md_content)
+    return jsonify({'download_url': md_link})
+
+@chat_bp.route('/api/protocol/extract', methods=['POST'])
+def extract_and_generate_protocol():
+    """
+    Принимает текст (или результат распознавания речи) и mode ('full'/'fast'),
+    извлекает данные, формирует Markdown и возвращает ссылку на скачивание.
+    """
+    data = request.get_json() or {}
+    text = data.get('text', '')
+    mode = data.get('mode', 'full')
+    if not text:
+        return jsonify({'error': 'Нет текста для обработки'}), 400
+    protocol_data = extract_protocol_data(text, mode=mode)
+    md_content = generate_protocol_markdown(protocol_data, mode=mode)
+    md_link = save_markdown(md_content)
+    return jsonify({'download_url': md_link})
+
+@chat_bp.route('/api/protocol/extract_json', methods=['POST'])
+def extract_protocol_json():
+    """
+    Принимает текст и mode, возвращает JSON-структуру протокола для редактирования.
+    """
+    data = request.get_json() or {}
+    text = data.get('text', '')
+    mode = data.get('mode', 'full')
+    if not text:
+        return jsonify({'error': 'Нет текста для обработки'}), 400
+    protocol_data = extract_protocol_data(text, mode=mode)
+    return jsonify({'protocol_data': protocol_data})

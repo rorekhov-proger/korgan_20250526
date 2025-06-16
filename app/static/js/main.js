@@ -24,6 +24,54 @@ document.addEventListener("DOMContentLoaded", function () {
             color: #fff;
             margin-right: 10px;
         }
+        .chat-list {
+            background: #232323;
+            border-radius: 12px;
+            padding: 12px 8px 12px 8px;
+            margin: 10px 0 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .chat-list p {
+            margin: 0 0 8px 8px;
+            color: #aaa;
+            font-size: 1.05em;
+        }
+        .chat-item {
+            padding: 10px 16px;
+            margin: 4px 0;
+            border-radius: 8px;
+            background: #292929;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+            font-size: 1.08em;
+            border: 1px solid transparent;
+        }
+        .chat-item.active {
+            background: #3498db;
+            color: #fff;
+            border: 1px solid #217dbb;
+            font-weight: bold;
+        }
+        .chat-item:hover {
+            background: #313a4a;
+            color: #fff;
+        }
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ccc;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     `;
     document.head.appendChild(style);
 
@@ -55,7 +103,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Добавляем индикатор загрузки сразу
                 const loadingMsg = document.createElement("div");
                 loadingMsg.className = "message assistant loading-msg";
-                loadingMsg.innerText = "Распознаём аудио...";
+                loadingMsg.innerHTML = '<span class="spinner"></span> Распознаём аудио...';
                 chatWindow.appendChild(loadingMsg);
                 chatWindow.scrollTop = chatWindow.scrollHeight;
 
@@ -202,37 +250,51 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    // --- Обновление текущего чата в сайдбаре ---
+    function updateCurrentChatTitle(title) {
+        const currentChatSpan = document.querySelector('.sidebar .highlight');
+        if (currentChatSpan) {
+            currentChatSpan.textContent = title || '';
+        }
+    }
+
+    // Модифицируем switchToChat чтобы обновлять текущий чат
     async function switchToChat(chatId) {
         try {
-            const response = await fetch(`/api/chat/${chatId}/messages`); // Исправлено на 'chat' вместо 'chats'
+            const response = await fetch(`/api/chat/${chatId}/messages`);
             if (!response.ok) {
                 throw new Error('Ошибка при загрузке сообщений чата');
             }
             const messages = await response.json();
-
             chatWindow.innerHTML = '';
-
             messages.forEach(msg => {
                 const msgDiv = document.createElement('div');
                 msgDiv.className = `message ${msg.role === 'user' ? 'user' : 'assistant'}`;
-                msgDiv.innerText = msg.message; // Исправлено на msg.message
+                msgDiv.innerText = msg.message;
                 chatWindow.appendChild(msgDiv);
             });
-
             chatWindow.scrollTop = chatWindow.scrollHeight;
-
             // Обновляем выделение активного чата
             const chatItems = document.querySelectorAll('.chat-item');
             chatItems.forEach(item => item.classList.remove('active'));
             const activeChat = document.querySelector(`.chat-item[data-chat-id='${chatId}']`);
             if (activeChat) {
                 activeChat.classList.add('active');
+                updateCurrentChatTitle(activeChat.innerText);
             }
         } catch (error) {
             console.error('Ошибка:', error);
             alert('Не удалось загрузить сообщения чата');
         }
     }
+
+    // При загрузке страницы показываем первый активный чат, если есть
+    document.addEventListener('DOMContentLoaded', () => {
+        const activeChat = document.querySelector('.chat-item.active');
+        if (activeChat) {
+            updateCurrentChatTitle(activeChat.innerText);
+        }
+    });
 
     // Функция для показа контекстного меню
     function showContextMenu(event, chat) {
@@ -331,6 +393,156 @@ document.addEventListener("DOMContentLoaded", function () {
             // Открываем ссылку на скачивание
             window.open(`/chat/${chatId}/download`, '_blank');
         });
+    }
+
+    // --- Протокол: обработка кнопок полного/быстрого заполнения ---
+    const modeSwitch = document.querySelector('.mode-switch');
+    let protocolMode = 'full'; // по умолчанию полное заполнение
+
+    if (modeSwitch) {
+        const buttons = modeSwitch.querySelectorAll('button');
+        buttons.forEach(btn => {
+            btn.addEventListener('click', async function() {
+                buttons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                protocolMode = btn.textContent.includes('Быстрое') ? 'fast' : 'full';
+                // Получаем текст последнего распознанного аудио или из чата
+                const lastBotMsg = Array.from(chatWindow.querySelectorAll('.message.assistant'))
+                    .map(el => el.innerText).filter(Boolean).pop();
+                if (!lastBotMsg) {
+                    alert('Нет текста для обработки!');
+                    return;
+                }
+                if(protocolMode === 'full') {
+                    // Получаем JSON для редактирования
+                    const resp = await fetch('/api/protocol/extract_json', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: lastBotMsg, mode: protocolMode })
+                    });
+                    const data = await resp.json();
+                    if(data.protocol_data) {
+                        showProtocolModal(data.protocol_data, async (editedData) => {
+                            // После редактирования отправляем на генерацию Markdown
+                            const resp2 = await fetch('/api/protocol/generate', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ protocol_data: editedData, mode: 'full' })
+                            });
+                            const d2 = await resp2.json();
+                            if(d2.download_url) {
+                                const link = document.createElement('a');
+                                link.href = d2.download_url;
+                                link.target = '_blank';
+                                link.textContent = 'Скачать протокол (полный)';
+                                chatWindow.appendChild(link);
+                                chatWindow.scrollTop = chatWindow.scrollHeight;
+                            } else {
+                                alert('Ошибка генерации протокола!');
+                            }
+                        });
+                    } else {
+                        alert('Ошибка разбора протокола!');
+                    }
+                } else {
+                    // Быстрое заполнение — старый вариант
+                    const resp = await fetch('/api/protocol/extract', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: lastBotMsg, mode: protocolMode })
+                    });
+                    const data = await resp.json();
+                    if (data.download_url) {
+                        const link = document.createElement('a');
+                        link.href = data.download_url;
+                        link.target = '_blank';
+                        link.textContent = 'Скачать протокол (быстрый)';
+                        chatWindow.appendChild(link);
+                        chatWindow.scrollTop = chatWindow.scrollHeight;
+                    } else {
+                        alert('Ошибка генерации протокола!');
+                    }
+                }
+            });
+        });
+    }
+
+    // --- Модальное окно для редактирования протокола ---
+    function showProtocolModal(protocolData, onSave) {
+        // Создаём модальное окно
+        let modal = document.createElement('div');
+        modal.className = 'modal-bg';
+        modal.innerHTML = `
+        <div class="modal-window">
+            <h2>Редактирование протокола</h2>
+            <form id="protocol-form">
+                <label>Номер протокола: <input name="protocol_number" value="${protocolData.protocol_number || ''}"></label><br>
+                <label>Наименование: <textarea name="protocol_name" rows="2">${protocolData.protocol_name || ''}</textarea></label><br>
+                <label>Дата: <input name="protocol_date" value="${protocolData.protocol_date || ''}"></label><br>
+                <label>Председатель: <input name="chairman" value="${protocolData.chairman || ''}"></label><br>
+                <label>Содержимое: <textarea name="content" rows="2">${protocolData.content || ''}</textarea></label><br>
+                <label>Контроль: <textarea name="control" rows="2">${protocolData.control || ''}</textarea></label><br>
+                <h3>Поручения</h3>
+                <div id="tasks-list">
+                    ${(protocolData.tasks||[]).map((t,i)=>`
+                        <div class="task-block">
+                            <b>Поручение ${i+1}</b><br>
+                            <label>Текст: <textarea name="task_text_${i}" rows="2">${t.task_text||''}</textarea></label><br>
+                            <label>Ответственный: <input name="responsible_${i}" value="${t.responsible||''}"></label><br>
+                            <label>Срок: <input name="deadline_${i}" value="${t.deadline||''}"></label><br>
+                            <label>Соисполнители: <input name="co_executors_${i}" value="${(t.co_executors||[]).join(', ')}"></label><br>
+                            <label>Основание: <input name="protocol_basis_${i}" value="${t.protocol_basis||''}"></label><br>
+                            <label>Периодичность: <input name="periodicity_${i}" value="${t.periodicity||''}"></label><br>
+                            <label>Примечание: <textarea name="note_${i}" rows="2">${t.note||''}</textarea></label><br>
+                        </div>
+                    `).join('')}
+                </div>
+                <button type="submit">Сохранить и скачать</button>
+                <button type="button" id="close-modal">Отмена</button>
+            </form>
+        </div>
+        <style>
+        .modal-bg { position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center; }
+        .modal-window { background:#222;padding:24px 32px;border-radius:12px;max-height:90vh;overflow:auto;color:#fff;min-width:600px; max-width:900px; width:70vw; }
+        .modal-window input, .modal-window textarea { width:98%;margin-bottom:6px; font-family:inherit; font-size:1em; }
+        .modal-window textarea { resize:vertical; min-height:38px; max-height:300px; }
+        .task-block { border:1px solid #444;padding:8px 12px;margin-bottom:10px;border-radius:8px;background:#292929; }
+        .modal-window button { margin:8px 8px 0 0; }
+        </style>
+        `;
+        document.body.appendChild(modal);
+        // Закрытие
+        modal.querySelector('#close-modal').onclick = () => modal.remove();
+        // Сохранение
+        modal.querySelector('#protocol-form').onsubmit = function(e) {
+            e.preventDefault();
+            // Собираем данные
+            const fd = new FormData(this);
+            let result = {
+                protocol_number: fd.get('protocol_number'),
+                protocol_name: fd.get('protocol_name'),
+                protocol_date: fd.get('protocol_date'),
+                chairman: fd.get('chairman'),
+                content: fd.get('content'),
+                control: fd.get('control'),
+                tasks: []
+            };
+            let i = 0;
+            while(fd.has('task_text_'+i)) {
+                result.tasks.push({
+                    task_text: fd.get('task_text_'+i),
+                    responsible: fd.get('responsible_'+i),
+                    deadline: fd.get('deadline_'+i),
+                    co_executors: (fd.get('co_executors_'+i)||'').split(',').map(s=>s.trim()).filter(Boolean),
+                    protocol_basis: fd.get('protocol_basis_'+i),
+                    periodicity: fd.get('periodicity_'+i),
+                    note: fd.get('note_'+i)
+                });
+                i++;
+            }
+            onSave(result);
+            modal.remove();
+        };
     }
 
     // Добавляем обработчики событий
