@@ -1,12 +1,15 @@
 from datetime import datetime
 from app import db
 from app.models.message import Message
+from app.models.user import User
 
 class Chat(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user = db.relationship('User', backref='chats')
     messages = db.relationship('Message', backref='chat', lazy=True, cascade='all, delete-orphan')
     
     def __repr__(self):
@@ -18,5 +21,6 @@ class Chat(db.Model):
             'title': self.title,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
-            'messages_count': len(self.messages)
+            'messages_count': len(self.messages),
+            'user_id': self.user_id
         }

@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify, request
+from flask_login import current_user, login_required
 from app import db
 from app.models.chat import Chat
 from app.models.chat_message import ChatMessage
@@ -8,11 +9,13 @@ from app.services.protocol_extract import extract_protocol_data
 chat_bp = Blueprint('chat', __name__)
 
 @chat_bp.route('/api/chats', methods=['GET'])
+@login_required
 def get_chats():
-    chats = Chat.query.order_by(Chat.updated_at.desc()).all()
+    chats = Chat.query.filter_by(user_id=current_user.id).order_by(Chat.updated_at.desc()).all()
     return jsonify([chat.to_dict() for chat in chats])
 
 @chat_bp.route('/api/chats', methods=['POST'])
+@login_required
 def create_chat():
     print("→ Получен запрос на создание чата")
     data = request.get_json() or {}
@@ -22,7 +25,7 @@ def create_chat():
         print("→ Ошибка: Не указано название чата")
         return jsonify({'error': 'Не указано название чата'}), 400
     try:
-        chat = Chat(title=title)
+        chat = Chat(title=title, user_id=current_user.id)
         db.session.add(chat)
         db.session.commit()
         print("→ Чат успешно создан с ID:", chat.id)

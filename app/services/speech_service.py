@@ -14,8 +14,14 @@ class SpeechService:
 
     def __init__(self):
         if SpeechService._model is None:
-            print("→ Загрузка модели Whisper")
-            SpeechService._model = whisper.load_model("medium")
+            print(f"torch version: {torch.__version__}")
+            print(f"torch.cuda.is_available(): {torch.cuda.is_available()}")
+            if torch.cuda.is_available():
+                print(f"CUDA device count: {torch.cuda.device_count()}")
+                print(f"CUDA device name: {torch.cuda.get_device_name(0)}")
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            print(f"→ Загрузка модели Whisper (device={device})")
+            SpeechService._model = whisper.load_model("medium", device=device)
         else:
             print("→ SpeechService временно отключен для тестирования.")
 

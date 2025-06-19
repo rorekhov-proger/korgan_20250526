@@ -72,6 +72,19 @@ document.addEventListener("DOMContentLoaded", function () {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        #block-overlay {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(0,0,0,0.65) !important;
+            z-index: 99999 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: not-allowed !important;
+        }
     `;
     document.head.appendChild(style);
 
@@ -112,6 +125,23 @@ document.addEventListener("DOMContentLoaded", function () {
                 formData.append("chat_id", chatId);
                 formData.append("model", modelSelect.value);
 
+                // === Затемняющий оверлей и блокировка ===
+                let overlay = document.createElement('div');
+                overlay.id = 'block-overlay';
+                overlay.style = `
+                    position: fixed;
+                    top: 0; left: 0; width: 100vw; height: 100vh;
+                    background: rgba(0,0,0,0.45);
+                    z-index: 2000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: not-allowed;
+                `;
+                overlay.innerHTML = `<div style='color:#fff;font-size:1.5em;'><span class="spinner"></span>Распознаём аудио...</div>`;
+                document.body.appendChild(overlay);
+                document.body.style.overflow = 'hidden';
+
                 try {
                     const res = await fetch("/upload", { method: "POST", body: formData });
                     const data = await res.json();
@@ -127,6 +157,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 } catch (err) {
                     loadingMsg.remove();
                     alert("Произошла ошибка при загрузке файла.");
+                } finally {
+                    // Убираем оверлей и возвращаем скролл
+                    if (overlay) overlay.remove();
+                    document.body.style.overflow = '';
                 }
             };
         });
@@ -466,9 +500,9 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         });
     }
-
     // --- Модальное окно для редактирования протокола ---
     function showProtocolModal(protocolData, onSave) {
+        console.log('[DEBUG] protocolData:', protocolData);
         // Создаём модальное окно
         let modal = document.createElement('div');
         modal.className = 'modal-bg';
@@ -572,7 +606,7 @@ async function sendMessage(chatId, messageText) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                sender_id: 'user', // Замените на реальный идентификатор пользователя
+                sender_id: 'user',
                 message: messageText
             })
         });

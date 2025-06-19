@@ -35,20 +35,43 @@ def extract_protocol_data(text: str, mode: str = 'full') -> Dict[str, Any]:
             protocol['content'] = 'Присутствовали: ' + m.group(1).strip()
         # Извлечение поручений (расширенный шаблон)
         task_pattern = re.compile(
-            r'Поручение: (.+?)(?:\n|$)\s*- Ответственный: (.+?)(?:\n|$)(?:\s*- Соисполнители: (.+?)(?:\n|$))?\s*- Срок:? (.+?)(?:\n|$)(?:\s*- Периодичность: (.+?)(?:\n|$))?',
+            r'Поручение: (.+?)(?:\n|$)'  # Поручение
+            r'\s*- Ответственный: (.+?)(?:\n|$)'  # Ответственный
+            r'\s*- Срок:? (.+?)(?:\n|$)'  # Срок
+            r'\s*- Соисполнители: (.*?)(?:\n|$)'  # Соисполнители
+            r'\s*- Основание: (.*?)(?:\n|$)'  # Основание
+            r'\s*- Периодичность: (.*?)(?:\n|$)'  # Периодичность
+            r'\s*- Примечание: (.*?)(?:\n|$)',  # Примечание
             re.DOTALL | re.IGNORECASE
         )
-        for match in task_pattern.finditer(text):
-            task = {
-                'task_text': match.group(1).strip(),
-                'responsible': match.group(2).strip(),
-                'co_executors': [x.strip() for x in (match.group(3) or '').split(',') if x.strip()],
-                'deadline': match.group(4).strip(),
-                'periodicity': (match.group(5) or '').strip(),
-                'protocol_basis': '',
-                'note': ''
-            }
-            protocol['tasks'].append(task)
+        # Альтернативное разбиение, если шаблон не сработал
+        fallback_pattern = re.compile(r'Поручение:', re.IGNORECASE)
+        if not task_pattern.search(text) and fallback_pattern.search(text):
+            tasks = text.split('Поручение:')
+            for raw_task in tasks[1:]:
+                task_lines = raw_task.strip().split('\n')
+                task = {
+                    'task_text': task_lines[0].strip(),
+                    'responsible': '',
+                    'deadline': '',
+                    'co_executors': [],
+                    'protocol_basis': '',
+                    'periodicity': '',
+                    'note': ''
+                }
+                protocol['tasks'].append(task)
+        else:
+            for match in task_pattern.finditer(text):
+                task = {
+                    'task_text': match.group(1).strip(),
+                    'responsible': match.group(2).strip(),
+                    'deadline': match.group(3).strip(),
+                    'co_executors': [x.strip() for x in (match.group(4) or '').split(',') if x.strip()],
+                    'protocol_basis': (match.group(5) or '').strip(),
+                    'periodicity': (match.group(6) or '').strip(),
+                    'note': (match.group(7) or '').strip(),
+                }
+                protocol['tasks'].append(task)
         # Альтернативное извлечение поручений по списку (если не сработал шаблон)
         if not protocol['tasks']:
             try:
@@ -63,19 +86,22 @@ def extract_protocol_data(text: str, mode: str = 'full') -> Dict[str, Any]:
                     task = {
                         'task_text': match.group(1).strip(),
                         'responsible': match.group(2).strip(),
-                        'co_executors': [x.strip() for x in (match.group(3) or '').split(',') if x.strip()],
-                        'deadline': match.group(4).strip(),
-                        'periodicity': (match.group(5) or '').strip(),
-                        'protocol_basis': '',
-                        'note': ''
+                        'co_executors': [x.strip() for x in (match.group(4) or '').split(',') if x.strip()],
+                        'protocol_basis': (match.group(5) or '').strip(),
+                        'periodicity': (match.group(6) or '').strip(),
+                        'note': (match.group(7) or '').strip(),
+                        'deadline': match.group(3).strip(),
                     }
                     protocol['tasks'].append(task)
             except Exception as e:
                 print(f"[OpenAI extract error] {e}", file=sys.stderr)
     except Exception as e:
         print(f"[extract_protocol_data error] {e}", file=sys.stderr)
-    # Для быстрого режима только задачи
-    if mode == 'fast':
-        protocol['tasks'] = protocol['tasks'][:3]
-        return protocol
+    # После основного парсинга — пост-обработка для защиты от склеивания
+    for task in protocol['tasks']:
+        # Если в поле 'responsible' попали маркеры других полей или начало следующего поручения — обрезаем
+        for marker in ['- Срок:', '- Соисполнители:', '- Основание:', '- Периодичность:', '- Примечание:', 'Поручение:']:
+            if marker in task['responsible']:
+                task['responsible'] = task['responsible'].split(marker)[0].strip()
+    # Для быстрого режима больше не ограничиваем количество задач
     return protocol
