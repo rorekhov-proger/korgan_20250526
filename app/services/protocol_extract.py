@@ -1,6 +1,7 @@
 import re
 from typing import Dict, Any, List
-import sys
+import logging
+from app.services.gpt_service import GPTService
 
 def extract_protocol_data(text: str, mode: str = 'full') -> Dict[str, Any]:
     """
@@ -75,13 +76,13 @@ def extract_protocol_data(text: str, mode: str = 'full') -> Dict[str, Any]:
         # Альтернативное извлечение поручений по списку (если не сработал шаблон)
         if not protocol['tasks']:
             try:
-                from app.services.openai_service import OpenAIService
-                gpt = OpenAIService()
-                print('[DEBUG] Отправка текста в OpenAI:', file=sys.stderr)
-                print(text, file=sys.stderr)
-                gpt_structured = gpt.extract_protocol(text)
-                print('[DEBUG] Ответ OpenAI:', file=sys.stderr)
-                print(gpt_structured, file=sys.stderr)
+                gpt = GPTService()
+                logging.info('[extract_protocol_data] Отправка текста в OpenAI')
+                gpt_structured = gpt.get_completion([
+                    {"role": "system", "content": "Ты помощник для структурирования протоколов и поручений."},
+                    {"role": "user", "content": text}
+                ], model="gpt-4o")
+                logging.info('[extract_protocol_data] Ответ OpenAI получен')
                 for match in task_pattern.finditer(gpt_structured):
                     task = {
                         'task_text': match.group(1).strip(),
@@ -94,9 +95,9 @@ def extract_protocol_data(text: str, mode: str = 'full') -> Dict[str, Any]:
                     }
                     protocol['tasks'].append(task)
             except Exception as e:
-                print(f"[OpenAI extract error] {e}", file=sys.stderr)
+                logging.error(f"[OpenAI extract error] {e}")
     except Exception as e:
-        print(f"[extract_protocol_data error] {e}", file=sys.stderr)
+        logging.error(f"[extract_protocol_data error] {e}")
     # После основного парсинга — пост-обработка для защиты от склеивания
     for task in protocol['tasks']:
         # Если в поле 'responsible' попали маркеры других полей или начало следующего поручения — обрезаем

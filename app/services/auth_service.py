@@ -3,6 +3,7 @@ from typing import Optional, Tuple
 from app.models.user import User
 from app.services.redis_service import RedisService
 from app import db
+import logging
 
 class AuthService:
     def __init__(self):
@@ -22,11 +23,13 @@ class AuthService:
             
             db.session.add(user)
             db.session.commit()
+            logging.info(f"Пользователь зарегистрирован: {email}")
             
             return True, "Регистрация успешна"
             
         except Exception as e:
             db.session.rollback()
+            logging.error(f"Ошибка при регистрации: {str(e)}")
             return False, f"Ошибка при регистрации: {str(e)}"
             
     def authenticate_user(self, login: str, password: str, ip: str) -> Tuple[bool, str, Optional[User]]:
@@ -51,16 +54,20 @@ class AuthService:
             # Обновляем время последнего входа
             user.last_login = datetime.utcnow()
             db.session.commit()
+            logging.info(f"Пользователь аутентифицирован: {login}")
             
             return True, "Вход выполнен успешно", user
             
         except Exception as e:
+            logging.error(f"Ошибка при аутентификации: {str(e)}")
             return False, f"Ошибка при аутентификации: {str(e)}", None
             
     def logout_user(self, user_id: str):
         """Выход пользователя"""
         try:
             self.redis_service.delete_user_session(user_id)
+            logging.info(f"Пользователь вышел: {user_id}")
             return True, "Выход выполнен успешно"
         except Exception as e:
-            return False, f"Ошибка при выходе: {str(e)}" 
+            logging.error(f"Ошибка при выходе: {str(e)}")
+            return False, f"Ошибка при выходе: {str(e)}"

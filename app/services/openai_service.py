@@ -1,7 +1,7 @@
 import os
 import openai
 
-class OpenAIService:
+class GPTService:
     def __init__(self, api_key=None):
         self.api_key = api_key or os.getenv('OPENAI_API_KEY')
         self.client = openai.OpenAI(api_key=self.api_key)

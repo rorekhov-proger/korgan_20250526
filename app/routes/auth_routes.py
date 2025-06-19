@@ -10,6 +10,7 @@ import redis
 from app.config.config import Config
 from urllib.parse import urlparse
 import logging
+from app.utils.api_error_handler import api_error_handler
 
 auth = Blueprint('auth', __name__)
 auth_service = AuthService()
@@ -24,6 +25,7 @@ redis_client = redis.Redis(
 )
 
 @auth.route('/register', methods=['GET', 'POST'])
+@api_error_handler
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('main.chat'))
@@ -44,13 +46,14 @@ def register():
             return redirect(url_for('auth.login'))
         except Exception as e:
             db.session.rollback()
-            print(f"Ошибка при регистрации: {str(e)}")
+            logging.error(f"Ошибка при регистрации: {str(e)}")
             flash('Произошла ошибка при регистрации. Попробуйте позже.', 'error')
             return redirect(url_for('auth.register'))
     
     return render_template('auth/register.html', form=form)
 
 @auth.route('/login', methods=['GET', 'POST'])
+@api_error_handler
 def login():
     try:
         if current_user.is_authenticated:
@@ -76,11 +79,13 @@ def login():
         return render_template('500.html'), 500
 
 @auth.route('/logout')
+@api_error_handler
 def logout():
     logout_user()
     return redirect(url_for('auth.login'))
 
 @auth.route('/profile')
 @login_required
+@api_error_handler
 def profile():
     return render_template('auth/profile.html', user=current_user)

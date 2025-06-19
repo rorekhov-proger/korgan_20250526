@@ -6,6 +6,7 @@ from app.services.speech_service import SpeechService
 from app.services.gpt_service import GPTService
 from app.config.config import Config
 from app import db
+from app.utils.api_error_handler import api_error_handler
 
 main = Blueprint('main', __name__)
 speech_service = SpeechService()
@@ -27,15 +28,16 @@ def chat():
 
 @main.route("/upload", methods=["POST"])
 @login_required
+@api_error_handler
 def upload():
-    print("→ Проверка объекта db:", db)
-    print("→ Проверка соединения с базой данных")
+    logging.info("→ Проверка объекта db: %s", db)
+    logging.info("→ Проверка соединения с базой данных")
     try:
         connection = db.engine.connect()
-        print("→ Соединение с базой данных успешно установлено")
+        logging.info("→ Соединение с базой данных успешно установлено")
         connection.close()
     except Exception as e:
-        print(f"→ Ошибка соединения с базой данных: {e}")
+        logging.error(f"→ Ошибка соединения с базой данных: {e}")
 
     if "audio_file" not in request.files:
         return jsonify({"error": "Файл не найден"}), 400
@@ -82,6 +84,7 @@ def upload():
 
 @main.route("/gpt", methods=["POST"])
 @login_required
+@api_error_handler
 def gpt():
     print(">>> /gpt route called, data:", request.get_json())
     try:

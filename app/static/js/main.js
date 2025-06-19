@@ -598,27 +598,3 @@ document.addEventListener("DOMContentLoaded", function () {
     // Загружаем список чатов при загрузке страницы
     loadChats();
 });
-async function sendMessage(chatId, messageText) {
-    try {
-        const response = await fetch(`/api/chat/${chatId}/messages`, { // Исправлено на 'chat' вместо 'chats'
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                sender_id: 'user',
-                message: messageText
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error('Ошибка при отправке сообщения');
-        }
-
-        const savedMessage = await response.json();
-        console.log('Сообщение успешно отправлено:', savedMessage);
-    } catch (error) {
-        console.error('Ошибка:', error);
-        alert('Не удалось отправить сообщение');
-    }
-}

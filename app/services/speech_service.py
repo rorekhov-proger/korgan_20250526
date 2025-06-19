@@ -2,6 +2,7 @@ import whisper
 import os
 import gc
 import torch
+import logging
 
 class SpeechService:
     _instance = None
@@ -14,16 +15,16 @@ class SpeechService:
 
     def __init__(self):
         if SpeechService._model is None:
-            print(f"torch version: {torch.__version__}")
-            print(f"torch.cuda.is_available(): {torch.cuda.is_available()}")
+            logging.info(f"torch version: {torch.__version__}")
+            logging.info(f"torch.cuda.is_available(): {torch.cuda.is_available()}")
             if torch.cuda.is_available():
-                print(f"CUDA device count: {torch.cuda.device_count()}")
-                print(f"CUDA device name: {torch.cuda.get_device_name(0)}")
+                logging.info(f"CUDA device count: {torch.cuda.device_count()}")
+                logging.info(f"CUDA device name: {torch.cuda.get_device_name(0)}")
             device = "cuda" if torch.cuda.is_available() else "cpu"
-            print(f"→ Загрузка модели Whisper (device={device})")
+            logging.info(f"→ Загрузка модели Whisper (device={device})")
             SpeechService._model = whisper.load_model("medium", device=device)
         else:
-            print("→ SpeechService временно отключен для тестирования.")
+            logging.info("→ SpeechService временно отключен для тестирования.")
 
     @property
     def model(self):
@@ -31,12 +32,12 @@ class SpeechService:
 
     def transcribe_audio(self, filepath):
         try:
-            print(f"→ Проверка существования файла: {filepath}")
+            logging.info(f"→ Проверка существования файла: {filepath}")
             if not os.path.exists(filepath):
                 raise ValueError("Файл не существует")
 
             file_size = os.path.getsize(filepath)
-            print(f"→ Размер файла: {file_size} байт")
+            logging.info(f"→ Размер файла: {file_size} байт")
             if file_size < 1000:
                 raise ValueError("Файл слишком маленький или пустой")
             
@@ -44,21 +45,21 @@ class SpeechService:
                 raise ValueError("Файл слишком большой для обработки")
 
             if torch.cuda.is_available():
-                print("→ Очистка кеша CUDA")
+                logging.info("→ Очистка кеша CUDA")
                 torch.cuda.empty_cache()
 
-            print("→ Начало распознавания аудио")
+            logging.info("→ Начало распознавания аудио")
             result = self.model.transcribe(filepath, language="ru")
             text = result.get("text", "").strip()
 
             if not text:
                 raise ValueError("Не удалось распознать речь. Возможно, аудио слишком тихое или плохого качества.")
 
-            print(f"→ Распознанный текст: {text}")
+            logging.info(f"→ Распознанный текст: {text}")
             return text
 
         except Exception as e:
-            print(f"→ Ошибка обработки аудио: {str(e)}")
+            logging.error(f"→ Ошибка обработки аудио: {str(e)}")
             raise Exception(f"Ошибка обработки аудио: {str(e)}")
 
         finally:
