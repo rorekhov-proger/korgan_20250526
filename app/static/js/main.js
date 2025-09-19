@@ -15,7 +15,9 @@ document.addEventListener("DOMContentLoaded", function () {
         <option value="gpt-4-turbo">GPT-4 Turbo</option>
     `;
     modelSelect.className = "model-select";
-    document.querySelector(".input-area").insertBefore(modelSelect, sendBtn);
+    // Размещаем селектор модели перед полем ввода,
+    // чтобы кнопки загрузки и отправки располагались рядом
+    document.querySelector(".input-area").insertBefore(modelSelect, userInput);
 
     const style = document.createElement("style");
     style.textContent = `
