@@ -54,6 +54,13 @@ MYSQL_DB=korgan_db
 REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_DB=0
+
+# ASR backend (speech to text)
+# whisper | faster-whisper | ollama
+ASR_BACKEND=ollama
+# Optional for Ollama:
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_ASR_MODEL=whisper
 ```
 5. Настройте базу данных:
 ```bash
@@ -87,3 +94,46 @@ python run.py
 ## Примечания
 - Для работы с Whisper требуется поддержка CUDA (GPU) для ускорения распознавания аудио.
 - Все основные настройки и ключи задаются через .env.
+
+## Ollama: локальные модели
+
+- Чат‑модели (рекомендуемые теги):
+	- `llama3.1:8b` — стабильный общий ассистент (англ. контент, следование инструкциям)
+	- `qwen2.5:7b-instruct` — сильнее в мультиязычности (русский), код/рассуждения
+
+Короткая рекомендация:
+- Нужен русский/код — берите `qwen2.5:7b-instruct`
+- Нужен общий ассистент (англ) — `llama3.1:8b`
+
+Установка моделей:
+```powershell
+ollama pull llama3.1:8b
+ollama pull qwen2.5:7b-instruct
+```
+
+Проверка установленных моделей:
+```powershell
+Invoke-RestMethod http://localhost:11434/api/tags | ConvertTo-Json -Depth 6
+```
+
+## ASR (распознавание речи)
+
+- Поддерживаются два бэкенда:
+	- `whisper` (локальная библиотека `openai-whisper`)
+	- `ollama` (если установлен подходящий аудио‑модельный тег)
+
+Переключение бэкенда в `.env`:
+```env
+ASR_BACKEND=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_ASR_MODEL=whisper:small
+```
+
+Важно: если указанная в Ollama аудио‑модель не установлена, приложение автоматически выполнит фолбэк на локальный Whisper. Для Whisper убедитесь, что в системе установлен `ffmpeg`, и зависимости из `requirements.txt` установлены.
+
+## Быстрый тест Ollama из PowerShell
+
+```powershell
+$body = '{"model":"llama3.1:8b","messages":[{"role":"user","content":"Привет!"}],"stream":false}';
+Invoke-RestMethod -Method Post -Uri http://localhost:11434/api/chat -Body $body -ContentType 'application/json' | ConvertTo-Json -Depth 5
+```

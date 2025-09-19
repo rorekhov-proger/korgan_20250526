@@ -44,7 +44,7 @@ def upload():
 
     audio = request.files["audio_file"]
     chat_id = request.form.get("chat_id")
-    model = request.form.get("model", "gpt-3.5-turbo")
+    model = request.form.get("model", "gpt-4o-mini")
     if not chat_id:
         return jsonify({"error": "Не выбран чат"}), 400
 
@@ -99,7 +99,7 @@ def gpt():
             logging.error("[GPT Route] Пустое сообщение или отсутствует chat_id")
             return jsonify({"error": "Пустое сообщение или отсутствует chat_id"}), 400
 
-        model = data.get("model", "gpt-3.5-turbo")
+        model = data.get("model", "gpt-4o-mini")
         logging.info(f"[GPT Route] Получено сообщение: {user_message}, модель: {model}, chat_id: {chat_id}")
         logging.info(f"[GPT Route] Используется OPENAI_API_KEY: {Config.OPENAI_API_KEY[:10]}... (скрыт)")
         logging.info(f"[GPT Route] Используется OPENAI_API_BASE_URL: {Config.OPENAI_API_BASE_URL}")

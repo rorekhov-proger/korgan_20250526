@@ -7,6 +7,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const modelSelect = document.createElement("select");
 
     modelSelect.innerHTML = `
+        <option value="ollama:llama3.1:8b">Ollama: Llama 3.1 (8B)</option>
+        <option value="ollama:qwen2.5:7b-instruct">Ollama: Qwen 2.5 (7B Instruct)</option>
+        <option value="gpt-5-nano">GPT-5 Nano</option>
         <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
         <option value="gpt-4">GPT-4</option>
         <option value="gpt-4-turbo">GPT-4 Turbo</option>
