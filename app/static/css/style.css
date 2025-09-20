@@ -45,6 +45,26 @@ body {
     padding: 12px;
 }
 
+.chat-list-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+.new-chat-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #2a2a33;
+    border: 1px solid #3a3a44;
+    color: #eaeaea;
+    border-radius: 10px;
+    cursor: pointer;
+}
+.new-chat-btn:hover { background: #34343e; }
+.chat-items { display: flex; flex-direction: column; gap: 8px; }
+
 .chat {
     flex: 1;
     padding: 20px 24px;

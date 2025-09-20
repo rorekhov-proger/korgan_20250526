@@ -1,41 +1,69 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>Чат интерфейс</title>
+        <meta charset="UTF-8">
+        <title>Чат интерфейс</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-    <div class="container">
-        <aside class="sidebar">
-            <p>Привет {{ current_user.email }}!</p>
-            <p><strong>Текущий чат:</strong><br><span class="highlight">Новый чат: 2025.05.22</span></p>
-            <ul class="links" style="list-style: none; padding-left: 0; margin: 0;">
-                <li>
-                    <a href="/logout" class="logout-link"><i class="fa-solid fa-right-from-bracket"></i>Выйти</a>
-                </li>
-            </ul>
-            <div class="chat-list">
-                <p>Чаты:</p>
-                <!-- Динамический список чатов рендерится через JS -->
-            </div>
-        </aside>
-        <main class="chat">
-            <h1>Добро пожаловать!</h1>
-            <div class="mode-switch">
-                <button class="active">Полное заполнение</button>
-                <button>Быстрое заполнение</button>
-            </div>
-            <div class="chat-window" id="chat-window"></div>
-            <div class="input-area">
-                <input type="text" id="user-input" placeholder="Введите сообщение...">
-                <button id="send-btn">Отправить</button>
-                <button id="upload-btn">📁 Загрузить файл</button>
-                <button>Новый чат</button>
-                <button>Скачать историю</button>
-            </div>
-            <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-        </main>
-    </div>
-</body>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+        <style>
+            /* небольшой safe-fallback, если style.css не загрузится */
+            .hidden { display: none; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <div class="user-greet">Привет, {{ current_user.email }}!</div>
+                    <a href="/logout" class="logout-link"><i class="fa-solid fa-right-from-bracket"></i> Выйти</a>
+                </div>
+                <div class="current-chat">
+                    <span class="label">Текущий чат</span>
+                            <span class="highlight"></span>
+                </div>
+                        <div class="chat-list">
+                            <div class="chat-list-head">
+                                <p>Чаты</p>
+                                <button id="new-chat-btn" class="new-chat-btn" title="Создать новый чат">
+                                    <i class="fa-solid fa-plus"></i>
+                                    Новый чат
+                                </button>
+                            </div>
+                            <div class="chat-items"><!-- Динамический список чатов рендерится через JS --></div>
+                        </div>
+            </aside>
+            <main class="chat">
+                <header class="chat-header">
+                    <h1>Добро пожаловать!</h1>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                      <button id="theme-toggle" class="theme-toggle" title="Переключить тему">Тема</button>
+                      <div class="mode-switch" title="Режим заполнения протокола">
+                        <button class="active">Полное</button>
+                        <button>Быстрое</button>
+                      </div>
+                    </div>
+                </header>
+
+                <section class="chat-window" id="chat-window"></section>
+
+                                <footer class="input-area">
+                            <input type="text" id="user-input" placeholder="Введите сообщение и нажмите Enter...">
+                            <button id="send-btn" title="Отправить сообщение"><i class="fa-solid fa-paper-plane"></i></button>
+                                    <button id="upload-btn" title="Загрузить аудио"><i class="fa-solid fa-file-arrow-up"></i></button>
+                            <button class="secondary-btn" title="Скачать историю">Скачать историю</button>
+                        </footer>
+
+                <div class="toast-container" id="toast-container"></div>
+                <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+                <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+            </main>
+        </div>
+    </body>
 </html>

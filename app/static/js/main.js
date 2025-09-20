@@ -1,4 +1,4 @@
-// Инициализация приложения
+// Инициализация приложения с улучшениями UI (тема, тосты, markdown, dnd)
 document.addEventListener("DOMContentLoaded", function () {
     const uploadBtn = document.getElementById("upload-btn");
     const sendBtn = document.getElementById("send-btn");
@@ -6,6 +6,63 @@ document.addEventListener("DOMContentLoaded", function () {
     const chatWindow = document.getElementById("chat-window");
     const modelSelect = document.createElement("select");
 
+    // Тема: загрузка и переключение
+    const themeToggle = document.getElementById('theme-toggle');
+    const applyTheme = (t) => document.documentElement.setAttribute('data-theme', t);
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    applyTheme(savedTheme);
+    if (themeToggle) {
+        themeToggle.textContent = savedTheme === 'light' ? 'Тёмная' : 'Светлая';
+        themeToggle.onclick = () => {
+            const curr = document.documentElement.getAttribute('data-theme') || 'dark';
+            const next = curr === 'light' ? 'dark' : 'light';
+            applyTheme(next);
+            localStorage.setItem('theme', next);
+            themeToggle.textContent = next === 'light' ? 'Тёмная' : 'Светлая';
+            showToast(`Тема: ${next === 'light' ? 'светлая' : 'тёмная'}`, 'info');
+        };
+    }
+
+    // Тосты
+    const toastContainer = document.getElementById('toast-container');
+    function showToast(message, type='info', timeout=3000) {
+        if (!toastContainer) { alert(message); return; }
+        const t = document.createElement('div');
+        t.className = `toast ${type}`;
+        t.textContent = message;
+        toastContainer.appendChild(t);
+        requestAnimationFrame(()=> t.classList.add('show'));
+        setTimeout(()=>{
+            t.classList.remove('show');
+            setTimeout(()=> t.remove(), 200);
+        }, timeout);
+    }
+
+    // Markdown + highlight
+    function renderMarkdown(html) {
+        try {
+            if (window.marked) {
+                marked.setOptions({
+                    breaks: true,
+                    highlight: function(code, lang) {
+                        if (window.hljs && lang && hljs.getLanguage(lang)) {
+                            return hljs.highlight(code, { language: lang }).value;
+                        }
+                        if (window.hljs) return hljs.highlightAuto(code).value;
+                        return code;
+                    }
+                });
+                return marked.parse(html);
+            }
+        } catch (e) {
+            console.warn('MD render error', e);
+        }
+        const div = document.createElement('div');
+        div.textContent = html;
+        return div.innerHTML;
+    }
+
+    // Селектор моделей
     modelSelect.innerHTML = `
         <option value="ollama:llama3.1:8b">Ollama: Llama 3.1 (8B)</option>
         <option value="ollama:qwen2.5:7b-instruct">Ollama: Qwen 2.5 (7B Instruct)</option>
@@ -15,229 +72,140 @@ document.addEventListener("DOMContentLoaded", function () {
         <option value="gpt-4-turbo">GPT-4 Turbo</option>
     `;
     modelSelect.className = "model-select";
-    // Размещаем селектор модели перед полем ввода,
-    // чтобы кнопки загрузки и отправки располагались рядом
     document.querySelector(".input-area").insertBefore(modelSelect, userInput);
 
+    // Локальные стили: спиннер и оверлей
     const style = document.createElement("style");
     style.textContent = `
-        .model-select {
-            padding: 8px;
-            border-radius: 8px;
-            border: 1px solid #444;
-            background-color: #2c2c2c;
-            color: #fff;
-            margin-right: 10px;
-        }
-        .chat-list {
-            background: #232323;
-            border-radius: 12px;
-            padding: 12px 8px 12px 8px;
-            margin: 10px 0 20px 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-        .chat-list p {
-            margin: 0 0 8px 8px;
-            color: #aaa;
-            font-size: 1.05em;
-        }
-        .chat-item {
-            padding: 10px 16px;
-            margin: 4px 0;
-            border-radius: 8px;
-            background: #292929;
-            color: #fff;
-            cursor: pointer;
-            transition: background 0.2s, color 0.2s;
-            font-size: 1.08em;
-            border: 1px solid transparent;
-        }
-        .chat-item.active {
-            background: #3498db;
-            color: #fff;
-            border: 1px solid #217dbb;
-            font-weight: bold;
-        }
-        .chat-item:hover {
-            background: #313a4a;
-            color: #fff;
-        }
-        .spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #ccc;
-            border-top: 3px solid #3498db;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            vertical-align: middle;
-            margin-right: 8px;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        #block-overlay {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            background: rgba(0,0,0,0.65) !important;
-            z-index: 99999 !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            cursor: not-allowed !important;
-        }
+        .model-select { padding: 8px; border-radius: 8px; border: 1px solid var(--btn-border); background-color: var(--input-bg); color: var(--text-color); margin-right: 10px; }
+        .spinner { display:inline-block; width:20px; height:20px; border:3px solid #ccc; border-top:3px solid #3498db; border-radius:50%; animation: spin 1s linear infinite; vertical-align:middle; margin-right: 8px; }
+        @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
+        #block-overlay { position: fixed !important; top:0 !important; left:0 !important; width:100vw !important; height:100vh !important; background: rgba(0,0,0,0.65) !important; z-index: 99999 !important; display:flex !important; align-items:center !important; justify-content:center !important; cursor:not-allowed !important; }
     `;
     document.head.appendChild(style);
 
+    // Рендер сообщения с аватаром, баблом и временем
+    function timeNow() { return new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }); }
+    function addMessage(role, content, opts={ markdown: false, loading: false }) {
+        const wrap = document.createElement('div');
+        wrap.className = `message ${role}` + (opts.loading ? ' typing' : '');
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar';
+        avatar.textContent = role === 'user' ? 'Вы' : 'ИИ';
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        if (opts.loading) {
+            bubble.innerHTML = `ИИ печатает… <span class="dots"><span></span><span></span><span></span></span>`;
+        } else {
+            bubble.innerHTML = opts.markdown ? renderMarkdown(content) : (content || '');
+        }
+        const t = document.createElement('span');
+        t.className = 'time';
+        t.textContent = timeNow();
+        bubble.appendChild(document.createElement('br'));
+        bubble.appendChild(t);
+        wrap.appendChild(avatar);
+        wrap.appendChild(bubble);
+        chatWindow.appendChild(wrap);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+        return wrap;
+    }
+
+    // Drag & Drop на футер
+    const inputArea = document.querySelector('.input-area');
+    if (inputArea) {
+        ['dragenter','dragover'].forEach(evt => inputArea.addEventListener(evt, (e)=>{ e.preventDefault(); inputArea.classList.add('drop-hover'); }));
+        ['dragleave','drop'].forEach(evt => inputArea.addEventListener(evt, (e)=>{ e.preventDefault(); inputArea.classList.remove('drop-hover'); }));
+        inputArea.addEventListener('drop', (e)=>{ const file = e.dataTransfer.files && e.dataTransfer.files[0]; if (file) handleAudioUpload(file); });
+    }
+
+    // Загрузка аудио (общая логика)
+    async function handleAudioUpload(file) {
+        const activeChat = document.querySelector('.chat-item.active');
+        const chatId = activeChat ? activeChat.dataset.chatId : null;
+        if (!chatId) { showToast('Не выбран чат!', 'error'); return; }
+
+        addMessage('user', `📤 Отправлен файл: ${file.name}`);
+        const loadingMsg = addMessage('assistant', '', { loading: true });
+
+        const formData = new FormData();
+        formData.append("audio_file", file);
+        formData.append("chat_id", chatId);
+        formData.append("model", modelSelect.value);
+
+        let overlay = document.createElement('div');
+        overlay.id = 'block-overlay';
+        overlay.innerHTML = `<div style='color:#fff;font-size:1.5em;'><span class="spinner"></span>Распознаём аудио...</div>`;
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+        try {
+            const res = await fetch("/upload", { method: "POST", body: formData });
+            const data = await res.json();
+            loadingMsg.remove();
+            if (data.text) {
+                addMessage('assistant', data.text, { markdown: true });
+            } else {
+                showToast('Сервис не вернул текст', 'error');
+            }
+        } catch (err) {
+            loadingMsg.remove();
+            console.error(err);
+            showToast('Произошла ошибка при загрузке файла.', 'error');
+        } finally {
+            overlay.remove();
+            document.body.style.overflow = '';
+        }
+    }
+
+    // Кнопка загрузки аудио
     if (uploadBtn) {
         uploadBtn.addEventListener("click", () => {
             const input = document.createElement("input");
             input.type = "file";
             input.accept = "audio/*";
             input.click();
-
-            input.onchange = async () => {
-                const file = input.files[0];
-                if (!file) return;
-
-                // Получаем chat_id из активного чата
-                const activeChat = document.querySelector('.chat-item.active');
-                const chatId = activeChat ? activeChat.dataset.chatId : null;
-                if (!chatId) {
-                    alert('Не выбран чат!');
-                    return;
-                }
-
-                // Добавляем сообщение пользователя о файле сразу
-                const userMsg = document.createElement("div");
-                userMsg.className = "message user";
-                userMsg.innerText = `📤 Отправлен файл: ${file.name}`;
-                chatWindow.appendChild(userMsg);
-
-                // Добавляем индикатор загрузки сразу
-                const loadingMsg = document.createElement("div");
-                loadingMsg.className = "message assistant loading-msg";
-                loadingMsg.innerHTML = '<span class="spinner"></span> Распознаём аудио...';
-                chatWindow.appendChild(loadingMsg);
-                chatWindow.scrollTop = chatWindow.scrollHeight;
-
-                const formData = new FormData();
-                formData.append("audio_file", file);
-                formData.append("chat_id", chatId);
-                formData.append("model", modelSelect.value);
-
-                // === Затемняющий оверлей и блокировка ===
-                let overlay = document.createElement('div');
-                overlay.id = 'block-overlay';
-                overlay.style = `
-                    position: fixed;
-                    top: 0; left: 0; width: 100vw; height: 100vh;
-                    background: rgba(0,0,0,0.45);
-                    z-index: 2000;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    cursor: not-allowed;
-                `;
-                overlay.innerHTML = `<div style='color:#fff;font-size:1.5em;'><span class="spinner"></span>Распознаём аудио...</div>`;
-                document.body.appendChild(overlay);
-                document.body.style.overflow = 'hidden';
-
-                try {
-                    const res = await fetch("/upload", { method: "POST", body: formData });
-                    const data = await res.json();
-                    // После получения текста удаляем индикатор и показываем ответ
-                    loadingMsg.remove();
-                    if (data.text) {
-                        const botMsg = document.createElement("div");
-                        botMsg.className = "message assistant";
-                        botMsg.innerText = data.text;
-                        chatWindow.appendChild(botMsg);
-                        chatWindow.scrollTop = chatWindow.scrollHeight;
-                    }
-                } catch (err) {
-                    loadingMsg.remove();
-                    alert("Произошла ошибка при загрузке файла.");
-                } finally {
-                    // Убираем оверлей и возвращаем скролл
-                    if (overlay) overlay.remove();
-                    document.body.style.overflow = '';
-                }
-            };
+            input.onchange = async () => { const file = input.files[0]; if (!file) return; handleAudioUpload(file); };
         });
     }
 
+    // Отправка сообщения
     async function sendMessage() {
         const text = userInput.value.trim();
         if (!text) return;
-
-        const userMsg = document.createElement("div");
-        userMsg.className = "message user";
-        userMsg.innerText = text;
-        chatWindow.appendChild(userMsg);
-        chatWindow.scrollTop = chatWindow.scrollHeight;
+        addMessage('user', text);
         userInput.value = "";
 
-        // Получаем chat_id из активного чата
         const activeChat = document.querySelector('.chat-item.active');
         const chatId = activeChat ? activeChat.dataset.chatId : null;
-        if (!chatId) {
-            alert('Не выбран чат!');
-            return;
-        }
+        if (!chatId) { showToast('Не выбран чат!', 'error'); return; }
+
+        const typing = addMessage('assistant', '', { loading: true });
 
         try {
             const res = await fetch("/gpt", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
-                    message: text,
-                    chat_id: chatId, // <-- теперь chat_id передаётся
-                    model: modelSelect.value 
-                })
+                body: JSON.stringify({ message: text, chat_id: chatId, model: modelSelect.value })
             });
             const data = await res.json();
-            console.log("[DEBUG] Response from GPT API:", data);
-            const botMsg = document.createElement("div");
-            botMsg.className = "message assistant";
-            botMsg.innerText = data.reply || "Ошибка получения ответа от GPT";
-            chatWindow.appendChild(botMsg);
-            chatWindow.scrollTop = chatWindow.scrollHeight;
+            typing.remove();
+            addMessage('assistant', data.reply || "Ошибка получения ответа от GPT", { markdown: true });
         } catch (err) {
             console.error("[ERROR] Произошла ошибка при отправке сообщения:", err);
-            alert("Произошла ошибка при отправке сообщения.");
+            typing.remove();
+            showToast("Произошла ошибка при отправке сообщения.", 'error');
         }
     }
 
+    // Создать новый чат
     async function createNewChat() {
         const title = `Новый чат: ${new Date().toLocaleString('ru')}`;
         try {
-            const response = await fetch('/api/chats', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ title })
-            });
-
-            // Добавляем диагностику для проверки ответа от API
-            console.log('Ответ от API:', response.status, response.statusText);
+            const response = await fetch('/api/chats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title }) });
             const responseBody = await response.text();
-            console.log('Тело ответа:', responseBody);
-
-            // Парсим JSON только если статус успешный
             if (response.ok) {
                 const chatData = JSON.parse(responseBody);
-                console.log('Данные чата:', chatData);
-
-                // Динамически обновляем список чатов
                 await loadChats();
-
-                // Через небольшой таймаут выделяем новый чат как активный и открываем его
                 setTimeout(() => {
                     const chatItems = document.querySelectorAll('.chat-item');
                     chatItems.forEach(item => {
@@ -249,174 +217,96 @@ document.addEventListener("DOMContentLoaded", function () {
                         }
                     });
                 }, 100);
-            } else {
-                throw new Error('Ошибка при создании чата');
-            }
+                showToast('Чат создан', 'success');
+            } else { throw new Error('Ошибка при создании чата'); }
         } catch (error) {
             console.error('Ошибка:', error);
-            alert('Не удалось создать новый чат');
+            showToast('Не удалось создать новый чат', 'error');
         }
     }
+
+    // Загрузить список чатов
     async function loadChats() {
         try {
             const response = await fetch('/api/chats');
-            if (!response.ok) {
-                throw new Error('Ошибка при загрузке чатов');
-            }
+            if (!response.ok) throw new Error('Ошибка при загрузке чатов');
             const chats = await response.json();
-
-            const chatList = document.querySelector('.chat-list');
-
-            const chatTitle = chatList.querySelector('p');
+            const chatList = document.querySelector('.chat-list .chat-items') || document.querySelector('.chat-list');
             chatList.innerHTML = '';
-            chatList.appendChild(chatTitle);
-
             chats.forEach(chat => {
                 const chatItem = document.createElement('div');
                 chatItem.className = 'chat-item';
                 chatItem.dataset.chatId = chat.id;
                 chatItem.innerText = chat.title;
                 chatItem.addEventListener('click', () => switchToChat(chat.id));
-                chatItem.addEventListener('contextmenu', (event) => {
-                    event.preventDefault();
-                    showContextMenu(event, chat);
-                });
+                chatItem.addEventListener('contextmenu', (event) => { event.preventDefault(); showContextMenu(event, chat); });
                 chatList.appendChild(chatItem);
             });
-        } catch (error) {
-            console.error('Ошибка:', error);
-            alert('Не удалось загрузить список чатов');
-        }
+        } catch (error) { console.error('Ошибка:', error); showToast('Не удалось загрузить список чатов', 'error'); }
     }
 
-    // --- Обновление текущего чата в сайдбаре ---
+    // Обновление текущего чата в сайдбаре
     function updateCurrentChatTitle(title) {
         const currentChatSpan = document.querySelector('.sidebar .highlight');
-        if (currentChatSpan) {
-            currentChatSpan.textContent = title || '';
-        }
+        if (currentChatSpan) currentChatSpan.textContent = title || '';
     }
 
-    // Модифицируем switchToChat чтобы обновлять текущий чат
+    // Переключение чата
     async function switchToChat(chatId) {
         try {
             const response = await fetch(`/api/chat/${chatId}/messages`);
-            if (!response.ok) {
-                throw new Error('Ошибка при загрузке сообщений чата');
-            }
+            if (!response.ok) throw new Error('Ошибка при загрузке сообщений чата');
             const messages = await response.json();
             chatWindow.innerHTML = '';
-            messages.forEach(msg => {
-                const msgDiv = document.createElement('div');
-                msgDiv.className = `message ${msg.role === 'user' ? 'user' : 'assistant'}`;
-                msgDiv.innerText = msg.message;
-                chatWindow.appendChild(msgDiv);
-            });
+            messages.forEach(msg => { addMessage(msg.role === 'user' ? 'user' : 'assistant', msg.message, { markdown: msg.role !== 'user' }); });
             chatWindow.scrollTop = chatWindow.scrollHeight;
-            // Обновляем выделение активного чата
             const chatItems = document.querySelectorAll('.chat-item');
             chatItems.forEach(item => item.classList.remove('active'));
             const activeChat = document.querySelector(`.chat-item[data-chat-id='${chatId}']`);
-            if (activeChat) {
-                activeChat.classList.add('active');
-                updateCurrentChatTitle(activeChat.innerText);
-            }
-        } catch (error) {
-            console.error('Ошибка:', error);
-            alert('Не удалось загрузить сообщения чата');
-        }
+            if (activeChat) { activeChat.classList.add('active'); updateCurrentChatTitle(activeChat.innerText); }
+        } catch (error) { console.error('Ошибка:', error); showToast('Не удалось загрузить сообщения чата', 'error'); }
     }
 
-    // При загрузке страницы показываем первый активный чат, если есть
-    document.addEventListener('DOMContentLoaded', () => {
-        const activeChat = document.querySelector('.chat-item.active');
-        if (activeChat) {
-            updateCurrentChatTitle(activeChat.innerText);
-        }
-    });
+    // При первой загрузке показываем заголовок активного чата, если он уже отмечен
+    const preActiveChat = document.querySelector('.chat-item.active');
+    if (preActiveChat) { updateCurrentChatTitle(preActiveChat.innerText); }
 
-    // Функция для показа контекстного меню
+    // Контекстное меню
     function showContextMenu(event, chat) {
-        // Удаляем предыдущее меню, если оно есть
         const oldMenu = document.querySelector('.context-menu');
-        if (oldMenu) {
-            oldMenu.remove();
-        }
-
-        // Создаем контекстное меню
+        if (oldMenu) oldMenu.remove();
         const menu = document.createElement('div');
         menu.className = 'context-menu';
         menu.innerHTML = `
             <div class="menu-item rename">Переименовать</div>
             <div class="menu-item delete">Удалить</div>
         `;
-
-        // Позиционируем меню
         menu.style.left = `${event.pageX}px`;
         menu.style.top = `${event.pageY}px`;
-
-        // Добавляем обработчики
         menu.querySelector('.rename').onclick = () => renameChat(chat);
         menu.querySelector('.delete').onclick = () => deleteChat(chat.id);
-
-        // Добавляем меню на страницу
         document.body.appendChild(menu);
-
-        // Закрываем меню при клике вне его
-        document.addEventListener('click', () => {
-            menu.remove();
-        }, { once: true });
+        document.addEventListener('click', () => { menu.remove(); }, { once: true });
     }
 
-    // Функция для переименования чата
     async function renameChat(chat) {
         const newTitle = prompt('Введите новое название чата:', chat.title);
         if (!newTitle || newTitle === chat.title) return;
-
         try {
-            const response = await fetch(`/api/chats/${chat.id}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ title: newTitle })
-            });
-
-            if (!response.ok) {
-                throw new Error('Ошибка при переименовании чата');
-            }
-
-            // Обновляем список чатов
+            const response = await fetch(`/api/chats/${chat.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: newTitle }) });
+            if (!response.ok) throw new Error('Ошибка при переименовании чата');
             await loadChats();
-        } catch (error) {
-            console.error('Ошибка:', error);
-            alert('Не удалось переименовать чат');
-        }
+        } catch (error) { console.error('Ошибка:', error); showToast('Не удалось переименовать чат', 'error'); }
     }
 
-    // Функция для удаления чата
     async function deleteChat(chatId) {
         if (!confirm('Вы уверены, что хотите удалить этот чат?')) return;
-
         try {
-            const response = await fetch(`/api/chat/${chatId}`, { // Исправлено на 'chat' вместо 'chats'
-                method: 'DELETE'
-            });
-
-            if (!response.ok) {
-                throw new Error('Ошибка при удалении чата');
-            }
-
-            // Обновляем список чатов
+            const response = await fetch(`/api/chat/${chatId}`, { method: 'DELETE' });
+            if (!response.ok) throw new Error('Ошибка при удалении чата');
             await loadChats();
-            
-            // Очищаем окно чата
-            const chatWindow = document.getElementById('chat-window');
             chatWindow.innerHTML = '';
-        } catch (error) {
-            console.error('Ошибка:', error);
-            alert('Не удалось удалить чат');
-        }
+        } catch (error) { console.error('Ошибка:', error); showToast('Не удалось удалить чат', 'error'); }
     }
 
     // Кнопка "Скачать историю"
@@ -425,19 +315,14 @@ document.addEventListener("DOMContentLoaded", function () {
         downloadBtn.addEventListener('click', function() {
             const activeChat = document.querySelector('.chat-item.active');
             const chatId = activeChat ? activeChat.dataset.chatId : null;
-            if (!chatId) {
-                alert('Не выбран чат!');
-                return;
-            }
-            // Открываем ссылку на скачивание
+            if (!chatId) { showToast('Не выбран чат!', 'error'); return; }
             window.open(`/chat/${chatId}/download`, '_blank');
         });
     }
 
-    // --- Протокол: обработка кнопок полного/быстрого заполнения ---
+    // Режим протокола
     const modeSwitch = document.querySelector('.mode-switch');
-    let protocolMode = 'full'; // по умолчанию полное заполнение
-
+    let protocolMode = 'full';
     if (modeSwitch) {
         const buttons = modeSwitch.querySelectorAll('button');
         buttons.forEach(btn => {
@@ -445,70 +330,47 @@ document.addEventListener("DOMContentLoaded", function () {
                 buttons.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 protocolMode = btn.textContent.includes('Быстрое') ? 'fast' : 'full';
-                // Получаем текст последнего распознанного аудио или из чата
-                const lastBotMsg = Array.from(chatWindow.querySelectorAll('.message.assistant'))
+                const lastBotMsg = Array.from(chatWindow.querySelectorAll('.message.assistant .bubble'))
                     .map(el => el.innerText).filter(Boolean).pop();
-                if (!lastBotMsg) {
-                    alert('Нет текста для обработки!');
-                    return;
-                }
+                if (!lastBotMsg) { showToast('Нет текста для обработки!', 'error'); return; }
                 if(protocolMode === 'full') {
-                    // Получаем JSON для редактирования
                     const resp = await fetch('/api/protocol/extract_json', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ text: lastBotMsg, mode: protocolMode })
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: lastBotMsg, mode: protocolMode })
                     });
                     const data = await resp.json();
                     if(data.protocol_data) {
                         showProtocolModal(data.protocol_data, async (editedData) => {
-                            // После редактирования отправляем на генерацию Markdown
                             const resp2 = await fetch('/api/protocol/generate', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ protocol_data: editedData, mode: 'full' })
+                                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ protocol_data: editedData, mode: 'full' })
                             });
                             const d2 = await resp2.json();
                             if(d2.download_url) {
                                 const link = document.createElement('a');
-                                link.href = d2.download_url;
-                                link.target = '_blank';
-                                link.textContent = 'Скачать протокол (полный)';
-                                chatWindow.appendChild(link);
-                                chatWindow.scrollTop = chatWindow.scrollHeight;
-                            } else {
-                                alert('Ошибка генерации протокола!');
-                            }
+                                link.href = d2.download_url; link.target = '_blank'; link.textContent = 'Скачать протокол (полный)';
+                                chatWindow.appendChild(link); chatWindow.scrollTop = chatWindow.scrollHeight;
+                                showToast('Готово: протокол сформирован', 'success');
+                            } else { showToast('Ошибка генерации протокола!', 'error'); }
                         });
-                    } else {
-                        alert('Ошибка разбора протокола!');
-                    }
+                    } else { showToast('Ошибка разбора протокола!', 'error'); }
                 } else {
-                    // Быстрое заполнение — старый вариант
                     const resp = await fetch('/api/protocol/extract', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ text: lastBotMsg, mode: protocolMode })
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: lastBotMsg, mode: protocolMode })
                     });
                     const data = await resp.json();
                     if (data.download_url) {
                         const link = document.createElement('a');
-                        link.href = data.download_url;
-                        link.target = '_blank';
-                        link.textContent = 'Скачать протокол (быстрый)';
-                        chatWindow.appendChild(link);
-                        chatWindow.scrollTop = chatWindow.scrollHeight;
-                    } else {
-                        alert('Ошибка генерации протокола!');
-                    }
+                        link.href = data.download_url; link.target = '_blank'; link.textContent = 'Скачать протокол (быстрый)';
+                        chatWindow.appendChild(link); chatWindow.scrollTop = chatWindow.scrollHeight;
+                        showToast('Протокол (быстрый) готов', 'success');
+                    } else { showToast('Ошибка генерации протокола!', 'error'); }
                 }
             });
         });
     }
+
     // --- Модальное окно для редактирования протокола ---
     function showProtocolModal(protocolData, onSave) {
         console.log('[DEBUG] protocolData:', protocolData);
-        // Создаём модальное окно
         let modal = document.createElement('div');
         modal.className = 'modal-bg';
         modal.innerHTML = `
@@ -550,22 +412,11 @@ document.addEventListener("DOMContentLoaded", function () {
         </style>
         `;
         document.body.appendChild(modal);
-        // Закрытие
         modal.querySelector('#close-modal').onclick = () => modal.remove();
-        // Сохранение
         modal.querySelector('#protocol-form').onsubmit = function(e) {
             e.preventDefault();
-            // Собираем данные
             const fd = new FormData(this);
-            let result = {
-                protocol_number: fd.get('protocol_number'),
-                protocol_name: fd.get('protocol_name'),
-                protocol_date: fd.get('protocol_date'),
-                chairman: fd.get('chairman'),
-                content: fd.get('content'),
-                control: fd.get('control'),
-                tasks: []
-            };
+            let result = { protocol_number: fd.get('protocol_number'), protocol_name: fd.get('protocol_name'), protocol_date: fd.get('protocol_date'), chairman: fd.get('chairman'), content: fd.get('content'), control: fd.get('control'), tasks: [] };
             let i = 0;
             while(fd.has('task_text_'+i)) {
                 result.tasks.push({
@@ -584,22 +435,10 @@ document.addEventListener("DOMContentLoaded", function () {
         };
     }
 
-    // Добавляем обработчики событий
+    // Обработчики
     sendBtn.addEventListener("click", sendMessage);
-    userInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-            sendMessage();
-        }
-    });
-
-    // Находим все кнопки "Новый чат" и добавляем обработчик
-    const newChatButtons = document.querySelectorAll('button');
-    newChatButtons.forEach(button => {
-        if (button.textContent === 'Новый чат') {
-            button.onclick = createNewChat;
-        }
-    });
-
-    // Загружаем список чатов при загрузке страницы
+    userInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { sendMessage(); } });
+    const newChatBtn = document.getElementById('new-chat-btn');
+    if (newChatBtn) newChatBtn.onclick = createNewChat;
     loadChats();
 });
